@@ -26,7 +26,6 @@ import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -37,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -45,6 +45,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,13 +58,16 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mitte.shopper.ShoppingViewModel
 import com.mitte.shopper.ui.models.ShoppingItem
 import com.mitte.shopper.ui.models.ShoppingList
 import com.mitte.shopper.ui.theme.ShopperTheme
+import kotlinx.coroutines.delay
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.coroutines.cancellation.CancellationException
@@ -83,6 +87,7 @@ fun ShoppingList(
 
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
+    var itemsPendingDeletion by remember { mutableStateOf<Set<Int>>(emptySet()) }
     val lazyListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -141,143 +146,177 @@ fun ShoppingList(
                 items = items,
                 key = { item -> item.id }
             ) { item ->
-                var showMenu by remember { mutableStateOf(false) }
-                var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
-                val density = LocalDensity.current
-                val interactionSource = remember { MutableInteractionSource() }
+                val isPendingDeletion = itemsPendingDeletion.contains(item.id)
 
-                ReorderableItem(reorderableState, key = item.id) { isDragging ->
-                    val elevation by animateDpAsState(
-                        if (isDragging) 8.dp else 0.dp,
-                        label = "elevation"
-                    )
-                    val dismissState = rememberSwipeToDismissBoxState(
-                        confirmValueChange = {
-                            if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
-                                viewModel.removeItem(listId, item)
-                                true
-                            } else {
-                                false
-                            }
-                        },
-                        positionalThreshold = { it * .20f }
-                    )
-                    SwipeToDismissBox(
-                        state = dismissState,
-                        enableDismissFromStartToEnd = true,
-                        enableDismissFromEndToStart = true,
-                        backgroundContent = {
-                            val color by animateColorAsState(
-                                targetValue = when (dismissState.targetValue) {
-                                    SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> Color.Red.copy(
-                                        alpha = 0.8f
-                                    )
-
-                                    else -> Color.Transparent
-                                }, label = "background color"
-                            )
-                            val scale by animateFloatAsState(
-                                targetValue = if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
-                                label = "icon scale"
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(color)
-                                    .padding(horizontal = 20.dp),
-                                contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete Item",
-                                    tint = Color.White,
-                                    modifier = Modifier.scale(scale)
-                                )
-                            }
+                LaunchedEffect(isPendingDeletion, item.id) {
+                    if (isPendingDeletion) {
+                        delay(5000)
+                        if (itemsPendingDeletion.contains(item.id)) {
+                            viewModel.removeItem(listId, item)
+                            itemsPendingDeletion = itemsPendingDeletion - item.id
                         }
-                    ) {
-                        Card(
-                            modifier = Modifier
-                                .clip(CardDefaults.shape)
-                                .indication(interactionSource, rememberRipple())
-                                .pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onPress = { offset ->
-                                            val press = PressInteraction.Press(offset)
-                                            interactionSource.emit(press)
-                                            try {
-                                                awaitRelease()
-                                                interactionSource.emit(
-                                                    PressInteraction.Release(
-                                                        press
-                                                    )
-                                                )
-                                            } catch (c: CancellationException) {
-                                                interactionSource.emit(PressInteraction.Cancel(press))
-                                            }
-                                        },
-                                        onTap = { viewModel.toggleChecked(listId, item) },
-                                        onLongPress = { offset ->
-                                            showMenu = true
-                                            pressOffset = with(density) {
-                                                DpOffset(offset.x.toDp(), offset.y.toDp() - innerPadding.calculateTopPadding())
-                                            }
-                                        }
-                                    )
-                                },
-                            elevation = CardDefaults.cardElevation(defaultElevation = elevation)
-                        ) {
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                Row(
-                                    modifier = Modifier.padding(vertical = 0.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            modifier = Modifier.padding(horizontal = 8.dp),
-                                            text = item.name,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
-                                            color = if (item.isChecked) Color.Gray else Color.Unspecified,
-                                        )
-                                    }
-                                    IconButton(
-                                        modifier = Modifier.draggableHandle(),
-                                        onClick = {},
-                                    ) {
-                                        Icon(
-                                            Icons.Rounded.DragHandle,
-                                            contentDescription = "Reorder"
-                                        )
-                                    }
-                                }
+                    }
+                }
 
-                                DropdownMenu(
-                                    expanded = showMenu,
-                                    onDismissRequest = { showMenu = false },
-                                    offset = pressOffset
+                if (isPendingDeletion) {
+                    UndoRow(onUndo = { itemsPendingDeletion = itemsPendingDeletion - item.id })
+                } else {
+                    var showMenu by remember { mutableStateOf(false) }
+                    var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
+                    val density = LocalDensity.current
+                    val interactionSource = remember { MutableInteractionSource() }
+
+                    ReorderableItem(reorderableState, key = item.id) { isDragging ->
+                        val elevation by animateDpAsState(
+                            if (isDragging) 8.dp else 0.dp,
+                            label = "elevation"
+                        )
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = {
+                                if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                    itemsPendingDeletion = itemsPendingDeletion + item.id
+                                    true
+                                } else {
+                                    false
+                                }
+                            },
+                            positionalThreshold = { it * .50f }
+                        )
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            enableDismissFromStartToEnd = true,
+                            enableDismissFromEndToStart = true,
+                            backgroundContent = {
+                                val color by animateColorAsState(
+                                    targetValue = when (dismissState.dismissDirection) {
+                                        SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> Color.Red.copy(
+                                            alpha = 0.8f
+                                        )
+
+                                        else -> Color.Transparent
+                                    }, label = "background color"
+                                )
+                                val scale by animateFloatAsState(
+                                    targetValue = if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
+                                    label = "icon scale"
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CardDefaults.shape)
+                                        .background(color)
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
                                 ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Edit") },
-                                        onClick = {
-                                            itemToEdit = item
-                                            showMenu = false
-                                        }
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete Item",
+                                        tint = Color.White,
+                                        modifier = Modifier.scale(scale)
                                     )
-                                    DropdownMenuItem(
-                                        text = { Text("Delete") },
-                                        onClick = {
-                                            viewModel.removeItem(listId, item)
-                                            showMenu = false
+                                }
+                            }
+                        ) {
+                            Surface(
+                                shape = CardDefaults.shape,
+                                color = ShopperTheme.colors.groupCardContainer,
+                                contentColor = ShopperTheme.colors.groupCardContent,
+                                tonalElevation = 0.dp,
+                                shadowElevation = elevation,
+                                modifier = Modifier
+                                    .indication(interactionSource, rememberRipple())
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onPress = { offset ->
+                                                val press = PressInteraction.Press(offset)
+                                                interactionSource.emit(press)
+                                                try {
+                                                    awaitRelease()
+                                                    interactionSource.emit(
+                                                        PressInteraction.Release(
+                                                            press
+                                                        )
+                                                    )
+                                                } catch (c: CancellationException) {
+                                                    interactionSource.emit(PressInteraction.Cancel(press))
+                                                }
+                                            },
+                                            onTap = { viewModel.toggleChecked(listId, item) },
+                                            onLongPress = { offset ->
+                                                showMenu = true
+                                                pressOffset = with(density) {
+                                                    DpOffset(offset.x.toDp(), offset.y.toDp() - innerPadding.calculateTopPadding())
+                                                }
+                                            }
+                                        )
+                                    }
+                            ) {
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 0.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                modifier = Modifier.padding(horizontal = 8.dp),
+                                                text = item.name,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
+                                                color = if (item.isChecked) Color.Gray else Color.Unspecified,
+                                            )
                                         }
-                                    )
+                                        IconButton(
+                                            modifier = Modifier.draggableHandle(),
+                                            onClick = {},
+                                        ) {
+                                            Icon(
+                                                Icons.Rounded.DragHandle,
+                                                contentDescription = "Reorder"
+                                            )
+                                        }
+                                    }
+
+                                    DropdownMenu(
+                                        expanded = showMenu,
+                                        onDismissRequest = { showMenu = false },
+                                        offset = pressOffset
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Edit") },
+                                            onClick = {
+                                                itemToEdit = item
+                                                showMenu = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Delete") },
+                                            onClick = {
+                                                viewModel.removeItem(listId, item)
+                                                showMenu = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun UndoRow(onUndo: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(onClick = onUndo) {
+            Text("UNDO", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
