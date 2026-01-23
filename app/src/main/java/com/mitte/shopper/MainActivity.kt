@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.mitte.shopper.ui.theme.ShopperTheme
 import com.mitte.shopper.ui.views.ShoppingList
 import com.mitte.shopper.ui.views.MainView
 
@@ -20,31 +21,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val navController = rememberNavController()
+            ShopperTheme {
+                val navController = rememberNavController()
 
-            NavHost(
-                navController = navController,
-                startDestination = "shoppingLists"
-            ) {
-                composable("shoppingLists") {
-                    MainView(
-                        viewModel = shoppingViewModel,
-                        navController = navController
-                    )
-                }
+                NavHost(
+                    navController = navController,
+                    startDestination = "shoppingLists"
+                ) {
+                    composable("shoppingLists") {
+                        MainView(
+                            viewModel = shoppingViewModel,
+                            navController = navController
+                        )
+                    }
 
-                composable(
-                    route = "shoppingItems/{listId}",
-                    arguments = listOf(navArgument("listId") { type = NavType.IntType })
-                ) { backStackEntry ->
-                    val listId = backStackEntry.arguments?.getInt("listId") ?: -1
-                    ShoppingList(
-                        viewModel = shoppingViewModel,
-                        listId = listId
-                    )
+                    composable(
+                        route = "shoppingItems/{listId}",
+                        arguments = listOf(navArgument("listId") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val listId = backStackEntry.arguments?.getInt("listId") ?: -1
+                        ShoppingList(
+                            viewModel = shoppingViewModel,
+                            listId = listId
+                        )
+                    }
                 }
             }
         }
     }
 }
-

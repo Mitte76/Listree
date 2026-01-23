@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import com.mitte.shopper.ShoppingViewModel
 import com.mitte.shopper.ui.models.ShoppingItem
 import com.mitte.shopper.ui.models.ShoppingList
+import com.mitte.shopper.ui.theme.ShopperTheme
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.coroutines.cancellation.CancellationException
@@ -75,9 +76,10 @@ fun ShoppingList(
     listId: Int
 ) {
     val allLists by viewModel.shoppingLists.collectAsState()
-    val currentList =
-        allLists.find { it.id == listId } ?: ShoppingList(listId, "Not Found", emptyList())
-    val items = currentList.items
+    val currentList = allLists.firstOrNull { it.id == listId } 
+        ?: allLists.flatMap { it.subLists ?: emptyList() }.firstOrNull { it.id == listId } 
+        ?: ShoppingList(id = listId, name = "Not Found", items = emptyList())
+    val items = currentList.items ?: emptyList()
 
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
@@ -92,8 +94,8 @@ fun ShoppingList(
             TopAppBar(
                 title = { Text(currentList.name) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = ShopperTheme.colors.topAppBarContainer,
+                    titleContentColor = ShopperTheme.colors.topAppBarTitle
                 )
             )
         },
@@ -315,7 +317,7 @@ private fun EditItemDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    var itemName by remember { mutableStateOf(item.name) }
+    var itemName by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Edit Item Name") },
@@ -324,7 +326,7 @@ private fun EditItemDialog(
                 value = itemName,
                 onValueChange = { itemName = it },
                 label = { Text("Item Name") },
-                singleLine = false
+                singleLine = true
             )
         },
         confirmButton = {
