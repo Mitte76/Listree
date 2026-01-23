@@ -23,6 +23,20 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
             ?: shoppingLists.value.flatMap { it.subLists ?: emptyList() }.firstOrNull { it.id == listId }
     }
 
+    fun toggleExpanded(listId: Int) {
+        _shoppingLists.update { currentLists ->
+            val updatedList = currentLists.map { list ->
+                if (list.id == listId) {
+                    list.copy(isExpanded = !list.isExpanded)
+                } else {
+                    list
+                }
+            }
+            repository.saveShoppingLists(updatedList)
+            updatedList
+        }
+    }
+
     fun addList(listName: String) {
         _shoppingLists.update { currentLists ->
             val allLists = currentLists.flatMap { it.subLists ?: emptyList() } + currentLists

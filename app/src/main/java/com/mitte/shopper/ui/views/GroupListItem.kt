@@ -59,7 +59,6 @@ fun ReorderableCollectionItemScope.GroupListItem(
     navController: NavController,
     popupOffset: Dp
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -86,7 +85,7 @@ fun ReorderableCollectionItemScope.GroupListItem(
                                 interactionSource.emit(PressInteraction.Cancel(press))
                             }
                         },
-                        onTap = { isExpanded = !isExpanded },
+                        onTap = { viewModel.toggleExpanded(list.id) },
                         onLongPress = { offset ->
                             showMenu = true
                             pressOffset = with(density) {
@@ -156,7 +155,7 @@ fun ReorderableCollectionItemScope.GroupListItem(
                 }
             }
         }
-        AnimatedVisibility(isExpanded) {
+        AnimatedVisibility(list.isExpanded) {
 
             ReorderableColumn(
                 list = list.subLists ?: emptyList(),
