@@ -276,7 +276,7 @@ fun ShoppingList(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                modifier = Modifier.padding(horizontal = 8.dp),
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
                                                 text = item.name,
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
@@ -375,7 +375,7 @@ private fun EditItemDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    var itemName by remember { mutableStateOf("") }
+    var itemName by remember { mutableStateOf(item.name) }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Edit Item Name") },
@@ -384,7 +384,7 @@ private fun EditItemDialog(
                 value = itemName,
                 onValueChange = { itemName = it },
                 label = { Text("Item Name") },
-                singleLine = true
+                singleLine = false
             )
         },
         confirmButton = {
