@@ -35,10 +35,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.mitte.shopper.ShoppingViewModel
@@ -63,6 +65,7 @@ fun ReorderableCollectionItemScope.GroupList(
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
     val interactionSource = remember { MutableInteractionSource() }
     val density = LocalDensity.current
+    var menuWidth by remember { mutableStateOf(0.dp) }
 
     Column {
         Surface(
@@ -129,7 +132,10 @@ fun ReorderableCollectionItemScope.GroupList(
                 DropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false },
-                    offset = pressOffset.copy(y = pressOffset.y - popupOffset)
+                    modifier = Modifier.onSizeChanged {
+                        menuWidth = with(density) { it.width.toDp() }
+                    },
+                    offset = DpOffset((pressOffset.x - menuWidth).coerceAtLeast(0.dp), 0.dp)
                 ) {
                     DropdownMenuItem(
                         text = { Text("Add sub-list") },
@@ -175,6 +181,7 @@ fun ReorderableCollectionItemScope.GroupList(
                         var showMenu by remember { mutableStateOf(false) }
                         var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
                         val density = LocalDensity.current
+                        var subMenuWidth by remember { mutableStateOf(0.dp) }
 
                         Surface(
                             shape = CardDefaults.shape,
@@ -193,7 +200,11 @@ fun ReorderableCollectionItemScope.GroupList(
                                             interactionSource.emit(press)
                                             try {
                                                 awaitRelease()
-                                                interactionSource.emit(PressInteraction.Release(press))
+                                                interactionSource.emit(
+                                                    PressInteraction.Release(
+                                                        press
+                                                    )
+                                                )
                                             } catch (c: CancellationException) {
                                                 interactionSource.emit(PressInteraction.Cancel(press))
                                             }
@@ -239,12 +250,15 @@ fun ReorderableCollectionItemScope.GroupList(
                                 DropdownMenu(
                                     expanded = showMenu,
                                     onDismissRequest = { showMenu = false },
-                                    offset = pressOffset.copy(y = pressOffset.y - popupOffset)
+                                    modifier = Modifier.onSizeChanged {
+                                        subMenuWidth = with(density) { it.width.toDp() }
+                                    },
+                                    offset = DpOffset((pressOffset.x - subMenuWidth).coerceAtLeast(0.dp), 0.dp)
                                 ) {
                                     DropdownMenuItem(
                                         text = { Text("Edit") },
                                         onClick = {
-                                            onListToEdit(list)
+                                            onListToEdit(item)
                                             showMenu = false
                                         }
                                     )

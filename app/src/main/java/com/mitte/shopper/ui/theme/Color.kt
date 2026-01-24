@@ -14,7 +14,8 @@ data class ShopperColors(
     val singleCardContainer: Color,
     val singleCardContent: Color,
     val itemContainer: Color,
-    val itemContent: Color
+    val itemContent: Color,
+    val strikethrough: Color
 )
 
 // A discrete and calming slate blue/grey palette
@@ -27,7 +28,8 @@ val LightShopperColors = ShopperColors(
     singleCardContainer = Color(0xFFDDDDDD),     // Light blue background
     singleCardContent = Color(0xFF212121),         // High-contrast dark text
     itemContainer = Color(0xFFEEEEEE),           // Light grey
-    itemContent = Color(0xFF090909)                // High-contrast dark text
+    itemContent = Color(0xFF212121),               // High-contrast dark text
+    strikethrough = Color(0xFFAA5A64)            // Strikethrough color
 )
 
 val DarkShopperColors = ShopperColors(
@@ -39,5 +41,6 @@ val DarkShopperColors = ShopperColors(
     singleCardContainer = Color(0xFF1A2026),     // Main dark background
     singleCardContent = Color(0xFFDCE4EC),         // Light text color
     itemContainer = Color(0xFF202830),           // Slightly lighter cards for items
-    itemContent = Color(0xFFDCE4EC)                // Light text color
+    itemContent = Color(0xFFDCE4EC),               // Light text color
+    strikethrough = Color(0xFFF44336)            // Strikethrough color
 )

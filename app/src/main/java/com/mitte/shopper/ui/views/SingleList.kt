@@ -29,10 +29,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import com.mitte.shopper.ui.models.ShoppingList
 import com.mitte.shopper.ui.theme.ShopperTheme
@@ -53,6 +55,7 @@ fun ReorderableCollectionItemScope.SingleList(
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
     val interactionSource = remember { MutableInteractionSource() }
     val density = LocalDensity.current
+    var menuWidth by remember { mutableStateOf(0.dp) }
 
     Surface(
         shape = CardDefaults.shape,
@@ -80,6 +83,8 @@ fun ReorderableCollectionItemScope.SingleList(
                         pressOffset = with(density) {
                             DpOffset(offset.x.toDp(), offset.y.toDp())
                         }
+                        println(pressOffset)
+
                     }
                 )
             },
@@ -113,11 +118,17 @@ fun ReorderableCollectionItemScope.SingleList(
                 }
             }
 
+            
+
             DropdownMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
-                offset = pressOffset.copy(y = pressOffset.y - popupOffset)
+                modifier = Modifier.onSizeChanged {
+                    menuWidth = with(density) { it.width.toDp() }
+                },
+                offset = DpOffset((pressOffset.x - menuWidth).coerceAtLeast(0.dp), 0.dp)
             ) {
+                
                 DropdownMenuItem(
                     text = { Text("Edit") },
                     onClick = {

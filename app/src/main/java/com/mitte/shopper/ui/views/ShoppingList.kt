@@ -275,13 +275,26 @@ fun ShoppingList(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                                                text = item.name,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
-                                                color = if (item.isChecked) Color.Gray else Color.Unspecified,
-                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                                                    .fillMaxWidth(),
+                                                contentAlignment = Alignment.CenterStart
+                                            ) {
+                                                Text(
+                                                    text = item.name,
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    color = if (item.isChecked) Color.Gray else ShopperTheme.colors.itemContent
+                                                )
+                                                if (item.isChecked) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .height(1.dp)
+                                                            .background(ShopperTheme.colors.strikethrough)
+                                                    )
+                                                }
+                                            }
                                         }
                                         IconButton(
                                             modifier = Modifier.draggableHandle(),

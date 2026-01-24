@@ -28,7 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,10 +49,10 @@ fun MainView(
 ) {
     val shoppingLists by viewModel.shoppingLists.collectAsState()
 
-    var showAddDialog by remember { mutableStateOf(false) }
-    var listToEdit by remember { mutableStateOf<ShoppingList?>(null) }
-    var showAddSubListDialog by remember { mutableStateOf(false) }
-    var parentGroup by remember { mutableStateOf<ShoppingList?>(null) }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    var listToEditId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showAddSubListDialog by rememberSaveable { mutableStateOf(false) }
+    var parentGroupId by rememberSaveable { mutableStateOf<Int?>(null) }
     val lazyListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -62,7 +62,7 @@ fun MainView(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Your Shopping Lists") },
+                title = { Text("Your Lists") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = ShopperTheme.colors.topAppBarContainer,
                     titleContentColor = ShopperTheme.colors.topAppBarTitle
@@ -71,7 +71,7 @@ fun MainView(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Filled.Add, contentDescription = "Add new shopping list")
+                Icon(Icons.Filled.Add, contentDescription = "Add new list")
             }
         },
         modifier = Modifier.fillMaxSize()
@@ -90,30 +90,36 @@ fun MainView(
             )
         }
 
-        listToEdit?.let { list ->
-            EditListDialog(
-                list = list,
-                onDismissRequest = { listToEdit = null },
-                onConfirm = { newName ->
-                    viewModel.editListName(list.id, newName)
-                    listToEdit = null
-                }
-            )
+        listToEditId?.let { id ->
+            val listToEdit = shoppingLists.firstOrNull { it.id == id } ?: shoppingLists.flatMap { it.subLists ?: emptyList() }.firstOrNull { it.id == id }
+            if (listToEdit != null) {
+                EditListDialog(
+                    list = listToEdit,
+                    onDismissRequest = { listToEditId = null },
+                    onConfirm = { newName ->
+                        viewModel.editListName(id, newName)
+                        listToEditId = null
+                    }
+                )
+            }
         }
 
         if (showAddSubListDialog) {
-            parentGroup?.let { group ->
-                AddSubListDialog(
-                    onDismissRequest = {
-                        showAddSubListDialog = false
-                        parentGroup = null
-                    },
-                    onConfirm = { subListName ->
-                        viewModel.addSubList(group.id, subListName)
-                        showAddSubListDialog = false
-                        parentGroup = null
-                    }
-                )
+            parentGroupId?.let { id ->
+                val parentGroup = shoppingLists.firstOrNull { it.id == id }
+                if (parentGroup != null) {
+                    AddSubListDialog(
+                        onDismissRequest = {
+                            showAddSubListDialog = false
+                            parentGroupId = null
+                        },
+                        onConfirm = { subListName ->
+                            viewModel.addSubList(id, subListName)
+                            showAddSubListDialog = false
+                            parentGroupId = null
+                        }
+                    )
+                }
             }
         }
 
@@ -138,9 +144,9 @@ fun MainView(
                         GroupList(
                             list = list,
                             elevation = elevation,
-                            onListToEdit = { listToEdit = it },
+                            onListToEdit = { listToEditId = it.id },
                             onAddSubList = {
-                                parentGroup = it
+                                parentGroupId = it.id
                                 showAddSubListDialog = true
                             },
                             viewModel = viewModel,
@@ -151,7 +157,7 @@ fun MainView(
                         SingleList(
                             list = list,
                             elevation = elevation,
-                            onListToEdit = { listToEdit = it },
+                            onListToEdit = { listToEditId = it.id },
                             onDeleteList = { viewModel.deleteList(list.id) },
                             onTap = { navController.navigate("shoppingItems/${list.id}") },
                             popupOffset = popupOffset
@@ -168,8 +174,8 @@ private fun AddListDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String, Boolean) -> Unit
 ) {
-    var listName by remember { mutableStateOf("") }
-    var isGroup by remember { mutableStateOf(false) }
+    var listName by rememberSaveable { mutableStateOf("") }
+    var isGroup by rememberSaveable { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Create New List") },
@@ -207,7 +213,7 @@ private fun EditListDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    var listName by remember { mutableStateOf(list.name) }
+    var listName by rememberSaveable { mutableStateOf(list.name) }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Edit List Name") },
@@ -238,7 +244,7 @@ private fun AddSubListDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    var listName by remember { mutableStateOf("") }
+    var listName by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Create New Sub-List") },
