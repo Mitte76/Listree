@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,9 +60,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,6 +93,8 @@ fun ShoppingList(
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
     var itemsPendingDeletion by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    val itemHeights = remember { mutableStateMapOf<Int, Dp>() }
+    val density = LocalDensity.current
     val lazyListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -159,11 +166,16 @@ fun ShoppingList(
                 }
 
                 if (isPendingDeletion) {
-                    UndoRow(onUndo = { itemsPendingDeletion = itemsPendingDeletion - item.id })
+                    val itemHeight = itemHeights[item.id]
+                    if (itemHeight != null) {
+                        UndoRow(
+                            height = itemHeight,
+                            onUndo = { itemsPendingDeletion = itemsPendingDeletion - item.id }
+                        )
+                    }
                 } else {
                     var showMenu by remember { mutableStateOf(false) }
                     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
-                    val density = LocalDensity.current
                     val interactionSource = remember { MutableInteractionSource() }
 
                     ReorderableItem(reorderableState, key = item.id) { isDragging ->
@@ -225,6 +237,11 @@ fun ShoppingList(
                                 tonalElevation = 0.dp,
                                 shadowElevation = elevation,
                                 modifier = Modifier
+                                    .onSizeChanged { size ->
+                                        with(density) {
+                                            itemHeights[item.id] = size.height.toDp()
+                                        }
+                                    }
                                     .indication(interactionSource, rememberRipple())
                                     .pointerInput(Unit) {
                                         detectTapGestures(
@@ -308,16 +325,18 @@ fun ShoppingList(
 }
 
 @Composable
-private fun UndoRow(onUndo: () -> Unit) {
+private fun UndoRow(height: Dp, onUndo: () -> Unit) {
     Row(
         modifier = Modifier
-            .fillMaxSize(),
-        horizontalArrangement = Arrangement.End,
+            .fillMaxWidth()
+            .height(height)
+            .clip(CardDefaults.shape)
+            .background(Color.Red.copy(alpha = 0.8f))
+            .clickable(onClick = onUndo),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TextButton(onClick = onUndo) {
-            Text("UNDO", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        }
+        Text("UNDO", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }
 
