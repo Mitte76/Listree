@@ -49,7 +49,6 @@ fun ReorderableCollectionItemScope.SingleList(
     onListToEdit: (ShoppingList) -> Unit,
     onDeleteList: () -> Unit,
     onTap: () -> Unit,
-    popupOffset: Dp
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
@@ -117,9 +116,6 @@ fun ReorderableCollectionItemScope.SingleList(
                     Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
                 }
             }
-
-            
-
             DropdownMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },

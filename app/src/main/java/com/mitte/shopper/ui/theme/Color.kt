@@ -36,11 +36,11 @@ val DarkShopperColors = ShopperColors(
     topAppBarContainer = Color(0xFF3A4A5D),      // Muted slate blue
     topAppBarTitle = Color(0xFFDCE4EC),          // Light, almost-white blue-grey
     listMetaCount = Color(0xFFB0C0D0),           // Desaturated, light blue-grey
-    groupCardContainer = Color(0xFF2C3A47),      // A distinct, lighter slate for groups
+    groupCardContainer = Color(0xFF282828),      // A distinct, lighter slate for groups
     groupCardContent = Color(0xFFDCE4EC),         // Light text color
-    singleCardContainer = Color(0xFF1A2026),     // Main dark background
+    singleCardContainer = Color(0xFF3B3B3B),     // Main dark background
     singleCardContent = Color(0xFFDCE4EC),         // Light text color
-    itemContainer = Color(0xFF202830),           // Slightly lighter cards for items
+    itemContainer = Color(0xFF525252),           // Slightly lighter cards for items
     itemContent = Color(0xFFDCE4EC),               // Light text color
     strikethrough = Color(0xFFF44336)            // Strikethrough color
 )

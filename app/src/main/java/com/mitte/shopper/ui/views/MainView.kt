@@ -70,7 +70,7 @@ fun MainView(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
+            FloatingActionButton(onClick = { showAddDialog = true }, containerColor = ShopperTheme.colors.topAppBarContainer) {
                 Icon(Icons.Filled.Add, contentDescription = "Add new list")
             }
         },
@@ -123,8 +123,6 @@ fun MainView(
             }
         }
 
-        val popupOffset = innerPadding.calculateTopPadding()
-
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
@@ -151,7 +149,6 @@ fun MainView(
                             },
                             viewModel = viewModel,
                             navController = navController,
-                            popupOffset = popupOffset
                         )
                     } else {
                         SingleList(
@@ -160,7 +157,6 @@ fun MainView(
                             onListToEdit = { listToEditId = it.id },
                             onDeleteList = { viewModel.deleteList(list.id) },
                             onTap = { navController.navigate("shoppingItems/${list.id}") },
-                            popupOffset = popupOffset
                         )
                     }
                 }

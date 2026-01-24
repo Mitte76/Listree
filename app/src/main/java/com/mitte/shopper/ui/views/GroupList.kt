@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -59,7 +60,6 @@ fun ReorderableCollectionItemScope.GroupList(
     onAddSubList: (ShoppingList) -> Unit,
     viewModel: ShoppingViewModel,
     navController: NavController,
-    popupOffset: Dp
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
@@ -73,7 +73,6 @@ fun ReorderableCollectionItemScope.GroupList(
             color = ShopperTheme.colors.groupCardContainer,
             contentColor = ShopperTheme.colors.groupCardContent,
             shadowElevation = elevation,
-            tonalElevation = 0.dp,
             modifier = Modifier
                 .indication(interactionSource, rememberRipple())
                 .pointerInput(Unit) {
@@ -101,10 +100,13 @@ fun ReorderableCollectionItemScope.GroupList(
             Box(modifier = Modifier.fillMaxSize()) {
                 Row(
                     modifier = Modifier
-                        .background(Color.Transparent)
+                        .clip(shape = CardDefaults.shape)
                         .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                    verticalAlignment = Alignment.CenterVertically,
+
+
+
+                    ) {
                     Column(
                         modifier = Modifier
                             .weight(1f)

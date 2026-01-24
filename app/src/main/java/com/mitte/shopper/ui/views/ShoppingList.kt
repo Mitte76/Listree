@@ -1,5 +1,11 @@
 package com.mitte.shopper.ui.views
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -24,6 +30,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
@@ -61,6 +68,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -112,7 +120,7 @@ fun ShoppingList(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddItemDialog = true }) {
+            FloatingActionButton(onClick = { showAddItemDialog = true }, containerColor = ShopperTheme.colors.topAppBarContainer) {
                 Icon(Icons.Filled.Add, contentDescription = "Add new item")
             }
         },
@@ -157,7 +165,7 @@ fun ShoppingList(
 
                 LaunchedEffect(isPendingDeletion, item.id) {
                     if (isPendingDeletion) {
-                        delay(5000)
+                        delay(2500)
                         if (itemsPendingDeletion.contains(item.id)) {
                             viewModel.removeItem(listId, item)
                             itemsPendingDeletion = itemsPendingDeletion - item.id
@@ -359,6 +367,21 @@ private fun AddItemDialog(
     onConfirm: (String) -> Unit
 ) {
     var itemName by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    val voiceRecognizerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+        onResult = { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data = result.data
+                val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                if (!results.isNullOrEmpty()) {
+                    itemName = results[0]
+                }
+            }
+        }
+    )
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Add New Item") },
@@ -367,7 +390,23 @@ private fun AddItemDialog(
                 value = itemName,
                 onValueChange = { itemName = it },
                 label = { Text("Item Name") },
-                singleLine = true
+                singleLine = true,
+                trailingIcon = {
+                    IconButton(onClick = {
+                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "sv-SE")
+                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Prata för att lägga till en vara")
+                        }
+                        try {
+                            voiceRecognizerLauncher.launch(intent)
+                        } catch (e: ActivityNotFoundException) {
+                            println("Voice recognition not available on this device.")
+                        }
+                    }) {
+                        Icon(Icons.Default.Mic, contentDescription = "Voice Input")
+                    }
+                }
             )
         },
         confirmButton = {
