@@ -125,7 +125,7 @@ fun MainView(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(shoppingLists, key = { it.id }) { list ->
                 ReorderableItem(reorderableState, key = list.id) { isDragging ->
@@ -135,7 +135,7 @@ fun MainView(
                     )
 
                     if (list.type == ListType.GROUP_LIST) {
-                        GroupListItem(
+                        GroupList(
                             list = list,
                             elevation = elevation,
                             onListToEdit = { listToEdit = it },
@@ -148,7 +148,7 @@ fun MainView(
                             popupOffset = popupOffset
                         )
                     } else {
-                        ShoppingListItem(
+                        SingleList(
                             list = list,
                             elevation = elevation,
                             onListToEdit = { listToEdit = it },

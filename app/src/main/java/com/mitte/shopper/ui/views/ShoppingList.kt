@@ -180,7 +180,7 @@ fun ShoppingList(
 
                     ReorderableItem(reorderableState, key = item.id) { isDragging ->
                         val elevation by animateDpAsState(
-                            if (isDragging) 8.dp else 0.dp,
+                            if (isDragging) 8.dp else 2.dp,
                             label = "elevation"
                         )
                         val dismissState = rememberSwipeToDismissBoxState(
@@ -216,7 +216,7 @@ fun ShoppingList(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .clip(CardDefaults.shape)
+//                                        .clip(CardDefaults.shape)
                                         .background(color)
                                         .padding(horizontal = 20.dp),
                                     contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
@@ -232,8 +232,8 @@ fun ShoppingList(
                         ) {
                             Surface(
                                 shape = CardDefaults.shape,
-                                color = ShopperTheme.colors.groupCardContainer,
-                                contentColor = ShopperTheme.colors.groupCardContent,
+                                color = ShopperTheme.colors.itemContainer,
+                                contentColor = ShopperTheme.colors.itemContent,
                                 tonalElevation = 0.dp,
                                 shadowElevation = elevation,
                                 modifier = Modifier

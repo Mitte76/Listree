@@ -10,21 +10,34 @@ data class ShopperColors(
     val topAppBarTitle: Color,
     val listMetaCount: Color,
     val groupCardContainer: Color,
-    val groupCardContent: Color
+    val groupCardContent: Color,
+    val singleCardContainer: Color,
+    val singleCardContent: Color,
+    val itemContainer: Color,
+    val itemContent: Color
 )
 
+// A discrete and calming slate blue/grey palette
 val LightShopperColors = ShopperColors(
-    topAppBarContainer = Color(0xFF006A66),
-    topAppBarTitle = Color(0xFFFFFFFF),
-    listMetaCount = Color(0xFF4A6361),
-    groupCardContainer = Color(0xFFF0F0F0), // Solid Neutral Grey
-    groupCardContent = Color(0xFF3F4948)
+    topAppBarContainer = Color(0xFF4A6A8A),      // Deep, muted blue
+    topAppBarTitle = Color(0xFFFFFFFF),          // White
+    listMetaCount = Color(0xFF616161),           // Dark grey for good contrast
+    groupCardContainer = Color(0xFFBBBBBB),      // A bit darker blue
+    groupCardContent = Color(0xFF212121),         // High-contrast dark text
+    singleCardContainer = Color(0xFFDDDDDD),     // Light blue background
+    singleCardContent = Color(0xFF212121),         // High-contrast dark text
+    itemContainer = Color(0xFFEEEEEE),           // Light grey
+    itemContent = Color(0xFF090909)                // High-contrast dark text
 )
 
 val DarkShopperColors = ShopperColors(
-    topAppBarContainer = Color(0xFF4CDAD4),
-    topAppBarTitle = Color(0xFF003735),
-    listMetaCount = Color(0xFFB0CCC9),
-    groupCardContainer = Color(0xFF303030), // Solid Neutral Dark Grey
-    groupCardContent = Color(0xFFBEC9C7)
+    topAppBarContainer = Color(0xFF3A4A5D),      // Muted slate blue
+    topAppBarTitle = Color(0xFFDCE4EC),          // Light, almost-white blue-grey
+    listMetaCount = Color(0xFFB0C0D0),           // Desaturated, light blue-grey
+    groupCardContainer = Color(0xFF2C3A47),      // A distinct, lighter slate for groups
+    groupCardContent = Color(0xFFDCE4EC),         // Light text color
+    singleCardContainer = Color(0xFF1A2026),     // Main dark background
+    singleCardContent = Color(0xFFDCE4EC),         // Light text color
+    itemContainer = Color(0xFF202830),           // Slightly lighter cards for items
+    itemContent = Color(0xFFDCE4EC)                // Light text color
 )

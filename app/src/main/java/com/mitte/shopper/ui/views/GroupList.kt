@@ -50,7 +50,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ReorderableCollectionItemScope.GroupListItem(
+fun ReorderableCollectionItemScope.GroupList(
     list: ShoppingList,
     elevation: Dp,
     onListToEdit: (ShoppingList) -> Unit,
@@ -178,8 +178,8 @@ fun ReorderableCollectionItemScope.GroupListItem(
 
                         Surface(
                             shape = CardDefaults.shape,
-                            color = ShopperTheme.colors.groupCardContainer,
-                            contentColor = ShopperTheme.colors.groupCardContent,
+                            color = ShopperTheme.colors.singleCardContainer,
+                            contentColor = ShopperTheme.colors.singleCardContent,
                             tonalElevation = 0.dp,
                             shadowElevation = elevation,
                             modifier = Modifier
