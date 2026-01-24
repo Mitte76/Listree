@@ -145,8 +145,8 @@ fun ShoppingList(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(vertical = 8.dp, horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
 
         ) {
             items(
@@ -216,7 +216,7 @@ fun ShoppingList(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-//                                        .clip(CardDefaults.shape)
+                                        .clip(CardDefaults.shape)
                                         .background(color)
                                         .padding(horizontal = 20.dp),
                                     contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
