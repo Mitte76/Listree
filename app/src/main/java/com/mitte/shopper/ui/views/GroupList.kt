@@ -3,6 +3,7 @@ package com.mitte.shopper.ui.views
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -16,7 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.ripple.rememberRipple
@@ -55,6 +58,7 @@ fun ReorderableCollectionItemScope.GroupList(
     elevation: Dp,
     onListToEdit: (ShoppingList) -> Unit,
     onAddSubList: (ShoppingList) -> Unit,
+    onMoveItem: (ShoppingList) -> Unit,
     viewModel: ShoppingViewModel,
     navController: NavController
 ) {
@@ -96,18 +100,11 @@ fun ReorderableCollectionItemScope.GroupList(
                             .weight(1f)
                             .padding(vertical = 8.dp, horizontal = 8.dp),
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = list.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                Icons.Default.Folder, 
-                                contentDescription = "Group"
-                            )
-                        }
+                        Text(
+                            text = list.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                         Text(
                             text = "${list.subLists?.size ?: 0} sub-lists",
                             style = MaterialTheme.typography.bodyMedium,
@@ -122,13 +119,6 @@ fun ReorderableCollectionItemScope.GroupList(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Add sub-list") },
-                                onClick = {
-                                    onAddSubList(list)
-                                    showMenu = false
-                                }
-                            )
                             DropdownMenuItem(
                                 text = { Text("Edit") },
                                 onClick = {
@@ -152,113 +142,143 @@ fun ReorderableCollectionItemScope.GroupList(
                         Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
                     }
                 }
+                Icon(
+                    imageVector = if (list.isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 2.dp)
+                )
             }
         }
         AnimatedVisibility(list.isExpanded) {
+            Column {
+                ReorderableColumn(
+                    list = list.subLists ?: emptyList(),
+                    onSettle = { from, to ->
+                        viewModel.moveSubList(list.id, from, to)
+                    },
+                ) { index, item, isDragging ->
+                    val elevation by animateDpAsState(
+                        if (isDragging) 8.dp else 1.dp,
+                        label = "elevation"
+                    )
 
-            ReorderableColumn(
-                list = list.subLists ?: emptyList(),
-                onSettle = { from, to ->
-                    viewModel.moveSubList(list.id, from, to)
-                },
-            ) { index, item, isDragging ->
-                val elevation by animateDpAsState(
-                    if (isDragging) 8.dp else 1.dp,
-                    label = "elevation"
-                )
+                    key(item.id) {
+                        ReorderableItem { 
 
-                key(item.id) {
-                    ReorderableItem { 
-
-                        val interactionSource = remember { MutableInteractionSource() }
-                        var showSubMenu by remember { mutableStateOf(false) }
-                        
-                        Surface(
-                            shape = CardDefaults.shape,
-                            color = ShopperTheme.colors.singleCardContainer,
-                            contentColor = ShopperTheme.colors.singleCardContent,
-                            tonalElevation = 0.dp,
-                            shadowElevation = elevation,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 32.dp, top = 8.dp)
-                                .indication(interactionSource, rememberRipple())
-                                .pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onPress = { offset ->
-                                            val press = PressInteraction.Press(offset)
-                                            interactionSource.emit(press)
-                                            try {
-                                                awaitRelease()
-                                                interactionSource.emit(
-                                                    PressInteraction.Release(
-                                                        press
+                            val interactionSource = remember { MutableInteractionSource() }
+                            var showSubMenu by remember { mutableStateOf(false) }
+                            
+                            Surface(
+                                shape = CardDefaults.shape,
+                                color = ShopperTheme.colors.singleCardContainer,
+                                contentColor = ShopperTheme.colors.singleCardContent,
+                                tonalElevation = 0.dp,
+                                shadowElevation = elevation,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 32.dp, top = 8.dp)
+                                    .indication(interactionSource, rememberRipple())
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onPress = { offset ->
+                                                val press = PressInteraction.Press(offset)
+                                                interactionSource.emit(press)
+                                                try {
+                                                    awaitRelease()
+                                                    interactionSource.emit(
+                                                        PressInteraction.Release(
+                                                            press
+                                                        )
                                                     )
-                                                )
-                                            } catch (c: CancellationException) {
-                                                interactionSource.emit(PressInteraction.Cancel(press))
-                                            }
-                                        },
-                                        onTap = { navController.navigate("shoppingItems/${item.id}") },
-                                    )
-                                },
-                        ) {
-                            Box {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(vertical = 8.dp, horizontal = 16.dp)
+                                                } catch (c: CancellationException) {
+                                                    interactionSource.emit(PressInteraction.Cancel(press))
+                                                }
+                                            },
+                                            onTap = { navController.navigate("shoppingItems/${item.id}") },
+                                        )
+                                    },
+                            ) {
+                                Box {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = item.name,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = "${item.items?.size ?: 0} items",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = ShopperTheme.colors.listMetaCount
-                                        )
-                                    }
-                                    Box {
-                                        IconButton(onClick = { showSubMenu = true }) {
-                                            Icon(Icons.Default.MoreVert, contentDescription = "Settings for ${item.name}")
-                                        }
-                                        DropdownMenu(
-                                            expanded = showSubMenu,
-                                            onDismissRequest = { showSubMenu = false }
+                                        Column(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .padding(vertical = 8.dp, horizontal = 16.dp)
                                         ) {
-                                            DropdownMenuItem(
-                                                text = { Text("Edit") },
-                                                onClick = {
-                                                    onListToEdit(item)
-                                                    showSubMenu = false
-                                                }
+                                            Text(
+                                                text = item.name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
                                             )
-                                            DropdownMenuItem(
-                                                text = { Text("Delete") },
-                                                onClick = {
-                                                    viewModel.deleteList(item.id)
-                                                    showSubMenu = false
-                                                }
+                                            Text(
+                                                text = "${item.items?.size ?: 0} items",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = ShopperTheme.colors.listMetaCount
                                             )
                                         }
-                                    }
-                                    IconButton(
-                                        modifier = Modifier.draggableHandle(),
-                                        onClick = {},
-                                    ) {
-                                        Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                                        Box {
+                                            IconButton(onClick = { showSubMenu = true }) {
+                                                Icon(Icons.Default.MoreVert, contentDescription = "Settings for ${item.name}")
+                                            }
+                                            DropdownMenu(
+                                                expanded = showSubMenu,
+                                                onDismissRequest = { showSubMenu = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text("Edit") },
+                                                    onClick = {
+                                                        onListToEdit(item)
+                                                        showSubMenu = false
+                                                    }
+                                                )
+                                                DropdownMenuItem(
+                                                    text = { Text("Move to...") },
+                                                    onClick = {
+                                                        onMoveItem(item)
+                                                        showSubMenu = false
+                                                    }
+                                                )
+                                                DropdownMenuItem(
+                                                    text = { Text("Delete") },
+                                                    onClick = {
+                                                        viewModel.deleteList(item.id)
+                                                        showSubMenu = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                        IconButton(
+                                            modifier = Modifier.draggableHandle(),
+                                            onClick = {},
+                                        ) {
+                                            Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                                        }
                                     }
                                 }
                             }
-                        }
 
+                        }
                     }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp, top = 8.dp)
+                        .clickable { onAddSubList(list) }
+                        .padding(vertical = 8.dp, horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add new sub-list"
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add new sub-list", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }

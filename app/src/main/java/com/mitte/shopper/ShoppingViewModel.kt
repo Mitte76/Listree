@@ -86,7 +86,8 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
                         name = subListName.trim(),
                         type = ListType.ITEM_LIST,
                         items = emptyList(),
-                        subLists = emptyList()
+                        subLists = emptyList(),
+                        parentId = parentGroupId
                     )
                     list.copy(subLists = (list.subLists ?: emptyList()) + newList)
                 } else {
@@ -159,6 +160,30 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
             }
             repository.saveShoppingLists(updatedLists)
             updatedLists
+        }
+    }
+
+    fun moveSubListToNewGroup(subListId: Int, fromGroupId: Int, toGroupId: Int) {
+        _shoppingLists.update { currentLists ->
+            var subListToMove: ShoppingList? = null
+            val listsWithRemoved = currentLists.map { list ->
+                if (list.id == fromGroupId) {
+                    subListToMove = list.subLists?.firstOrNull { it.id == subListId }
+                    list.copy(subLists = list.subLists?.filterNot { it.id == subListId })
+                } else {
+                    list
+                }
+            }
+            val listsWithAdded = listsWithRemoved.map { list ->
+                if (list.id == toGroupId) {
+                    val movedList = subListToMove?.copy(parentId = toGroupId)
+                    list.copy(subLists = (list.subLists ?: emptyList()) + movedList!!)
+                } else {
+                    list
+                }
+            }
+            repository.saveShoppingLists(listsWithAdded)
+            listsWithAdded
         }
     }
 

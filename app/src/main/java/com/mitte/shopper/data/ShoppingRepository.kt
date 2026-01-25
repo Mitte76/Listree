@@ -22,12 +22,31 @@ class ShoppingRepository(context: Context) {
 
     fun getShoppingLists(): List<ShoppingList> {
         val jsonString = prefs.getString(KEY_SHOPPING_LISTS, null)
-        return if (jsonString != null) {
+        val lists = if (jsonString != null) {
             val type = object : TypeToken<List<ShoppingList>>() {}.type
             gson.fromJson(jsonString, type)
         } else {
             getInitialLists()
         }
+        return migrateShoppingLists(lists)
+    }
+
+    private fun migrateShoppingLists(lists: List<ShoppingList>): List<ShoppingList> {
+        val migratedLists = lists.map { list ->
+            if (list.type == com.mitte.shopper.ui.models.ListType.GROUP_LIST && list.subLists != null) {
+                list.copy(subLists = list.subLists.map { subList ->
+                    if (subList.parentId == null) {
+                        subList.copy(parentId = list.id)
+                    } else {
+                        subList
+                    }
+                })
+            } else {
+                list
+            }
+        }
+        saveShoppingLists(migratedLists)
+        return migratedLists
     }
 
     private fun getInitialLists(): List<ShoppingList> {

@@ -2,10 +2,14 @@ package com.mitte.shopper.ui.views
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,12 +18,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -33,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.mitte.shopper.ShoppingViewModel
 import com.mitte.shopper.ui.models.ListType
@@ -53,6 +61,7 @@ fun MainView(
     var listToEditId by rememberSaveable { mutableStateOf<Int?>(null) }
     var showAddSubListDialog by rememberSaveable { mutableStateOf(false) }
     var parentGroupId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var listToMove by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
     val lazyListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -123,6 +132,18 @@ fun MainView(
             }
         }
 
+        listToMove?.let { list ->
+            MoveListDialog(
+                list = list,
+                destinations = shoppingLists.filter { it.type == ListType.GROUP_LIST && it.id != list.parentId },
+                onDismissRequest = { listToMove = null },
+                onConfirm = { destinationId ->
+                    list.parentId?.let { viewModel.moveSubListToNewGroup(list.id, it, destinationId) }
+                    listToMove = null
+                }
+            )
+        }
+
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
@@ -147,6 +168,7 @@ fun MainView(
                                 parentGroupId = it.id
                                 showAddSubListDialog = true
                             },
+                            onMoveItem = { listToMove = it },
                             viewModel = viewModel,
                             navController = navController,
                         )
@@ -157,6 +179,40 @@ fun MainView(
                             onListToEdit = { listToEditId = it.id },
                             onTap = { navController.navigate("shoppingItems/${list.id}") },
                             viewModel = viewModel
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoveListDialog(
+    list: ShoppingList,
+    destinations: List<ShoppingList>,
+    onDismissRequest: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Surface(
+            shape = CardDefaults.shape,
+            color = ShopperTheme.colors.groupCardContainer,
+            contentColor = ShopperTheme.colors.groupCardContent,
+            tonalElevation = 0.dp,
+            shadowElevation = 8.dp,
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Move \"${list.name}\" to:", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(16.dp))
+                LazyColumn {
+                    items(destinations) { destination ->
+                        Text(
+                            text = destination.name,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onConfirm(destination.id) }
+                                .padding(vertical = 12.dp)
                         )
                     }
                 }
