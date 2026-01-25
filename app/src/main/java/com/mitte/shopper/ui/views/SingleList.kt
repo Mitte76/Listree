@@ -11,19 +11,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,17 +39,18 @@ import androidx.compose.ui.unit.dp
 import com.mitte.shopper.ShoppingViewModel
 import com.mitte.shopper.ui.models.ShoppingList
 import com.mitte.shopper.ui.theme.ShopperTheme
-import sh.calvin.reorderable.ReorderableCollectionItemScope
 import kotlin.coroutines.cancellation.CancellationException
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ReorderableCollectionItemScope.SingleList(
+fun SingleList(
     list: ShoppingList,
     elevation: Dp,
     onListToEdit: (ShoppingList) -> Unit,
+    onMoveItem: (ShoppingList) -> Unit,
     onTap: () -> Unit,
-    viewModel: ShoppingViewModel
+    viewModel: ShoppingViewModel,
+    modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var showMenu by remember { mutableStateOf(false) }
@@ -77,55 +80,67 @@ fun ReorderableCollectionItemScope.SingleList(
             },
     ) {
         Box {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(vertical = 8.dp, horizontal = 8.dp)
+            CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = list.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "${list.items?.size ?: 0} items",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = ShopperTheme.colors.listMetaCount
-                    )
-                }
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Settings for ${list.name}")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 8.dp, horizontal = 8.dp)
                     ) {
-                        DropdownMenuItem(
-                            text = { Text("Edit") },
-                            onClick = {
-                                onListToEdit(list)
-                                showMenu = false
-                            }
+                        Text(
+                            text = list.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
-                        DropdownMenuItem(
-                            text = { Text("Delete") },
-                            onClick = {
-                                viewModel.deleteList(list.id)
-                                showMenu = false
-                            }
+                        Text(
+                            text = "${list.items?.size ?: 0} items",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = ShopperTheme.colors.listMetaCount
                         )
                     }
-                }
-                IconButton(
-                    modifier = Modifier.draggableHandle(),
-                    onClick = {},
-                ) {
-                    Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "Settings for ${list.name}"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Edit") },
+                                onClick = {
+                                    onListToEdit(list)
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Move to...") },
+                                onClick = {
+                                    onMoveItem(list)
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete") },
+                                onClick = {
+                                    viewModel.deleteList(list.id)
+                                    showMenu = false
+                                }
+                            )
+                        }
+                    }
+                    IconButton(
+                        modifier = modifier,
+                        onClick = {},
+                    ) {
+                        Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                    }
                 }
             }
         }

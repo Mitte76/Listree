@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
@@ -23,6 +24,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -68,6 +70,10 @@ fun MainView(
         viewModel.moveList(from.index, to.index)
     }
 
+    fun getAllLists(lists: List<ShoppingList>): List<ShoppingList> {
+        return lists + lists.flatMap { getAllLists(it.subLists ?: emptyList()) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -79,7 +85,10 @@ fun MainView(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }, containerColor = ShopperTheme.colors.topAppBarContainer) {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = ShopperTheme.colors.topAppBarContainer
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = "Add new list")
             }
         },
@@ -100,7 +109,7 @@ fun MainView(
         }
 
         listToEditId?.let { id ->
-            val listToEdit = shoppingLists.firstOrNull { it.id == id } ?: shoppingLists.flatMap { it.subLists ?: emptyList() }.firstOrNull { it.id == id }
+            val listToEdit = viewModel.getListById(id)
             if (listToEdit != null) {
                 EditListDialog(
                     list = listToEdit,
@@ -115,17 +124,24 @@ fun MainView(
 
         if (showAddSubListDialog) {
             parentGroupId?.let { id ->
-                val parentGroup = shoppingLists.firstOrNull { it.id == id }
+                val parentGroup = viewModel.getListById(id)
                 if (parentGroup != null) {
                     AddSubListDialog(
                         onDismissRequest = {
                             showAddSubListDialog = false
                             parentGroupId = null
                         },
-                        onConfirm = { subListName ->
-                            viewModel.addSubList(id, subListName)
-                            showAddSubListDialog = false
-                            parentGroupId = null
+                        onConfirm = { subListName, isGroup ->
+                            if (isGroup) {
+                                viewModel.addSubGroup(id, subListName)
+                                showAddSubListDialog = false
+                                parentGroupId = null
+                            } else {
+                                viewModel.addSubList(id, subListName)
+                                showAddSubListDialog = false
+                                parentGroupId = null
+                            }
+
                         }
                     )
                 }
@@ -135,10 +151,16 @@ fun MainView(
         listToMove?.let { list ->
             MoveListDialog(
                 list = list,
-                destinations = shoppingLists.filter { it.type == ListType.GROUP_LIST && it.id != list.parentId },
+                destinations = getAllLists(shoppingLists).filter { it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id },
                 onDismissRequest = { listToMove = null },
                 onConfirm = { destinationId ->
-                    list.parentId?.let { viewModel.moveSubListToNewGroup(list.id, it, destinationId) }
+                    list.parentId?.let {
+                        viewModel.moveSubListToNewGroup(
+                            list.id,
+                            it,
+                            destinationId
+                        )
+                    }
                     listToMove = null
                 }
             )
@@ -151,7 +173,7 @@ fun MainView(
                 .padding(innerPadding)
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        ) { ->
             items(shoppingLists, key = { it.id }) { list ->
                 ReorderableItem(reorderableState, key = list.id) { isDragging ->
                     val elevation by animateDpAsState(
@@ -160,25 +182,37 @@ fun MainView(
                     )
 
                     if (list.type == ListType.GROUP_LIST) {
-                        GroupList(
+                        GroupTest(
                             list = list,
                             elevation = elevation,
                             onListToEdit = { listToEditId = it.id },
                             onAddSubList = {
+                                println("Kamelsnopp ${it.id}")
                                 parentGroupId = it.id
                                 showAddSubListDialog = true
                             },
                             onMoveItem = { listToMove = it },
                             viewModel = viewModel,
                             navController = navController,
+
+                            iconButton = {
+                                IconButton(
+                                    modifier = Modifier.draggableHandle(),
+                                    onClick = {},
+                                ) {
+                                    Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                                }
+                            }
                         )
                     } else {
                         SingleList(
                             list = list,
                             elevation = elevation,
                             onListToEdit = { listToEditId = it.id },
+                            onMoveItem = { listToMove = it },
                             onTap = { navController.navigate("shoppingItems/${list.id}") },
-                            viewModel = viewModel
+                            viewModel = viewModel,
+                            modifier = Modifier.draggableHandle()
                         )
                     }
                 }
@@ -260,6 +294,45 @@ private fun AddListDialog(
 }
 
 @Composable
+private fun AddSubListDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: (String, Boolean) -> Unit
+) {
+    var listName by rememberSaveable { mutableStateOf("") }
+    var isGroup by rememberSaveable { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Create New Sub-List") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = listName,
+                    onValueChange = { listName = it },
+                    label = { Text("List Name") },
+                    singleLine = true
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = isGroup, onCheckedChange = { isGroup = it })
+                    Text("Is a group")
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (listName.isNotBlank()) onConfirm(listName, isGroup) },
+                enabled = listName.isNotBlank()
+            ) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
 private fun EditListDialog(
     list: ShoppingList,
     onDismissRequest: () -> Unit,
@@ -283,37 +356,6 @@ private fun EditListDialog(
                 enabled = listName.isNotBlank()
             ) {
                 Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
-        }
-    )
-}
-
-@Composable
-private fun AddSubListDialog(
-    onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var listName by rememberSaveable { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text("Create New Sub-List") },
-        text = {
-            OutlinedTextField(
-                value = listName,
-                onValueChange = { listName = it },
-                label = { Text("Sub-List Name") },
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (listName.isNotBlank()) onConfirm(listName) },
-                enabled = listName.isNotBlank()
-            ) {
-                Text("Create")
             }
         },
         dismissButton = {

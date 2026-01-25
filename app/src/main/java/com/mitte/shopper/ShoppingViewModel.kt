@@ -18,20 +18,26 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
     private val _shoppingLists = MutableStateFlow<List<ShoppingList>>(repository.getShoppingLists())
     val shoppingLists: StateFlow<List<ShoppingList>> = _shoppingLists.asStateFlow()
 
+    private fun getAllLists(lists: List<ShoppingList>): List<ShoppingList> {
+        return lists + lists.flatMap { getAllLists(it.subLists ?: emptyList()) }
+    }
+
     fun getListById(listId: Int): ShoppingList? {
-        return shoppingLists.value.firstOrNull { it.id == listId } 
-            ?: shoppingLists.value.flatMap { it.subLists ?: emptyList() }.firstOrNull { it.id == listId }
+        return getAllLists(shoppingLists.value).firstOrNull { it.id == listId }
     }
 
     fun toggleExpanded(listId: Int) {
         _shoppingLists.update { currentLists ->
-            val updatedList = currentLists.map { list ->
-                if (list.id == listId) {
-                    list.copy(isExpanded = !list.isExpanded)
-                } else {
-                    list
+            fun mapList(list: List<ShoppingList>): List<ShoppingList> {
+                return list.map { item ->
+                    if (item.id == listId) {
+                        item.copy(isExpanded = !item.isExpanded)
+                    } else {
+                        item.copy(subLists = item.subLists?.let { mapList(it) })
+                    }
                 }
             }
+            val updatedList = mapList(currentLists)
             repository.saveShoppingLists(updatedList)
             updatedList
         }
@@ -39,8 +45,7 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
 
     fun addList(listName: String) {
         _shoppingLists.update { currentLists ->
-            val allLists = currentLists.flatMap { it.subLists ?: emptyList() } + currentLists
-            val newId = (allLists.maxOfOrNull { it.id } ?: 0) + 1
+            val newId = (getAllLists(currentLists).maxOfOrNull { it.id } ?: 0) + 1
 
             val newList = ShoppingList(
                 id = newId,
@@ -58,8 +63,7 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
 
     fun addGroupList(listName: String) {
         _shoppingLists.update { currentLists ->
-            val allLists = currentLists.flatMap { it.subLists ?: emptyList() } + currentLists
-            val newId = (allLists.maxOfOrNull { it.id } ?: 0) + 1
+            val newId = (getAllLists(currentLists).maxOfOrNull { it.id } ?: 0) + 1
 
             val newList = ShoppingList(
                 id = newId,
@@ -75,25 +79,57 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun addSubList(parentGroupId: Int, subListName: String) {
+    fun addSubGroup(parentGroupId: Int, subGroupName: String) {
         _shoppingLists.update { currentLists ->
-            val allLists = currentLists.flatMap { it.subLists ?: emptyList() } + currentLists
-            val newId = (allLists.maxOfOrNull { it.id } ?: 0) + 1
-            val updatedList = currentLists.map { list ->
-                if (list.id == parentGroupId) {
-                    val newList = ShoppingList(
-                        id = newId,
-                        name = subListName.trim(),
-                        type = ListType.ITEM_LIST,
-                        items = emptyList(),
-                        subLists = emptyList(),
-                        parentId = parentGroupId
-                    )
-                    list.copy(subLists = (list.subLists ?: emptyList()) + newList)
-                } else {
-                    list
+            val newId = (getAllLists(currentLists).maxOfOrNull { it.id } ?: 0) + 1
+
+            val newSubGroup = ShoppingList(
+                id = newId,
+                name = subGroupName.trim(),
+                type = ListType.GROUP_LIST,
+                items = null,
+                subLists = emptyList(),
+                parentId = parentGroupId
+            )
+
+            fun mapList(lists: List<ShoppingList>): List<ShoppingList> {
+                return lists.map { list ->
+                    if (list.id == parentGroupId) {
+                        list.copy(subLists = (list.subLists ?: emptyList()) + newSubGroup)
+                    } else {
+                        list.copy(subLists = list.subLists?.let { mapList(it) })
+                    }
                 }
             }
+            val updatedList = mapList(currentLists)
+            repository.saveShoppingLists(updatedList)
+            updatedList
+        }
+    }
+
+    fun addSubList(parentGroupId: Int, subListName: String) {
+        _shoppingLists.update { currentLists ->
+            val newId = (getAllLists(currentLists).maxOfOrNull { it.id } ?: 0) + 1
+            val newList = ShoppingList(
+                id = newId,
+                name = subListName.trim(),
+                type = ListType.ITEM_LIST,
+                items = emptyList(),
+                subLists = emptyList(),
+                parentId = parentGroupId
+            )
+
+            fun mapList(lists: List<ShoppingList>): List<ShoppingList> {
+                return lists.map { list ->
+                    if (list.id == parentGroupId) {
+                        list.copy(subLists = (list.subLists ?: emptyList()) + newList)
+                    } else {
+                        list.copy(subLists = list.subLists?.let { mapList(it) })
+                    }
+                }
+            }
+
+            val updatedList = mapList(currentLists)
             repository.saveShoppingLists(updatedList)
             updatedList
         }
@@ -145,19 +181,23 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
 
     fun moveSubList(parentListId: Int, from: Int, to: Int) {
         _shoppingLists.update { currentLists ->
-            val updatedLists = currentLists.map { list ->
-                if (list.id == parentListId) {
-                    val mutableSubLists = list.subLists?.toMutableList()
-                    if (mutableSubLists != null) {
-                        mutableSubLists.add(to, mutableSubLists.removeAt(from))
-                        list.copy(subLists = mutableSubLists.toList())
+            fun mapList(lists: List<ShoppingList>): List<ShoppingList> {
+                return lists.map { list ->
+                    if (list.id == parentListId) {
+                        val mutableSubLists = list.subLists?.toMutableList()
+                        if (mutableSubLists != null) {
+                            mutableSubLists.add(to, mutableSubLists.removeAt(from))
+                            list.copy(subLists = mutableSubLists.toList())
+                        } else {
+                            list
+                        }
                     } else {
-                        list
+                        list.copy(subLists = list.subLists?.let { mapList(it) })
                     }
-                } else {
-                    list
                 }
             }
+
+            val updatedLists = mapList(currentLists)
             repository.saveShoppingLists(updatedLists)
             updatedLists
         }
@@ -166,22 +206,32 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
     fun moveSubListToNewGroup(subListId: Int, fromGroupId: Int, toGroupId: Int) {
         _shoppingLists.update { currentLists ->
             var subListToMove: ShoppingList? = null
-            val listsWithRemoved = currentLists.map { list ->
-                if (list.id == fromGroupId) {
-                    subListToMove = list.subLists?.firstOrNull { it.id == subListId }
-                    list.copy(subLists = list.subLists?.filterNot { it.id == subListId })
-                } else {
-                    list
+
+            fun removeList(lists: List<ShoppingList>): List<ShoppingList> {
+                return lists.map { list ->
+                    if (list.id == fromGroupId) {
+                        subListToMove = list.subLists?.firstOrNull { it.id == subListId }
+                        list.copy(subLists = list.subLists?.filterNot { it.id == subListId })
+                    } else {
+                        list.copy(subLists = list.subLists?.let { removeList(it) })
+                    }
                 }
             }
-            val listsWithAdded = listsWithRemoved.map { list ->
-                if (list.id == toGroupId) {
-                    val movedList = subListToMove?.copy(parentId = toGroupId)
-                    list.copy(subLists = (list.subLists ?: emptyList()) + movedList!!)
-                } else {
-                    list
+
+            fun addList(lists: List<ShoppingList>): List<ShoppingList> {
+                return lists.map { list ->
+                    if (list.id == toGroupId) {
+                        val movedList = subListToMove?.copy(parentId = toGroupId)
+                        list.copy(subLists = (list.subLists ?: emptyList()) + movedList!!)
+                    } else {
+                        list.copy(subLists = list.subLists?.let { addList(it) })
+                    }
                 }
             }
+
+            val listsWithRemoved = removeList(currentLists)
+            val listsWithAdded = addList(listsWithRemoved)
+
             repository.saveShoppingLists(listsWithAdded)
             listsWithAdded
         }
