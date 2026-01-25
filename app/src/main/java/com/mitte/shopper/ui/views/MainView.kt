@@ -155,8 +155,8 @@ fun MainView(
                             list = list,
                             elevation = elevation,
                             onListToEdit = { listToEditId = it.id },
-                            onDeleteList = { viewModel.deleteList(list.id) },
                             onTap = { navController.navigate("shoppingItems/${list.id}") },
+                            viewModel = viewModel
                         )
                     }
                 }

@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.CardDefaults
@@ -29,13 +31,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
+import com.mitte.shopper.ShoppingViewModel
 import com.mitte.shopper.ui.models.ShoppingList
 import com.mitte.shopper.ui.theme.ShopperTheme
 import sh.calvin.reorderable.ReorderableCollectionItemScope
@@ -47,14 +46,11 @@ fun ReorderableCollectionItemScope.SingleList(
     list: ShoppingList,
     elevation: Dp,
     onListToEdit: (ShoppingList) -> Unit,
-    onDeleteList: () -> Unit,
     onTap: () -> Unit,
+    viewModel: ShoppingViewModel
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
     val interactionSource = remember { MutableInteractionSource() }
-    val density = LocalDensity.current
-    var menuWidth by remember { mutableStateOf(0.dp) }
+    var showMenu by remember { mutableStateOf(false) }
 
     Surface(
         shape = CardDefaults.shape,
@@ -76,15 +72,7 @@ fun ReorderableCollectionItemScope.SingleList(
                             interactionSource.emit(PressInteraction.Cancel(press))
                         }
                     },
-                    onTap = { onTap() },
-                    onLongPress = { offset ->
-                        showMenu = true
-                        pressOffset = with(density) {
-                            DpOffset(offset.x.toDp(), offset.y.toDp())
-                        }
-                        println(pressOffset)
-
-                    }
+                    onTap = { onTap() }
                 )
             },
     ) {
@@ -109,36 +97,36 @@ fun ReorderableCollectionItemScope.SingleList(
                         color = ShopperTheme.colors.listMetaCount
                     )
                 }
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Settings for ${list.name}")
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Edit") },
+                            onClick = {
+                                onListToEdit(list)
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            onClick = {
+                                viewModel.deleteList(list.id)
+                                showMenu = false
+                            }
+                        )
+                    }
+                }
                 IconButton(
                     modifier = Modifier.draggableHandle(),
                     onClick = {},
                 ) {
                     Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
                 }
-            }
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false },
-                modifier = Modifier.onSizeChanged {
-                    menuWidth = with(density) { it.width.toDp() }
-                },
-                offset = DpOffset((pressOffset.x - menuWidth).coerceAtLeast(0.dp), 0.dp)
-            ) {
-                
-                DropdownMenuItem(
-                    text = { Text("Edit") },
-                    onClick = {
-                        onListToEdit(list)
-                        showMenu = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Delete") },
-                    onClick = {
-                        onDeleteList()
-                        showMenu = false
-                    }
-                )
             }
         }
     }

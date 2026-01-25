@@ -115,7 +115,7 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
                 if (list.id == listId) {
                     list.copy(name = newName.trim())
                 } else if (list.subLists?.any { it.id == listId } == true) {
-                    list.copy(subLists = list.subLists?.map { subList ->
+                    list.copy(subLists = list.subLists.map { subList ->
                         if (subList.id == listId) {
                             subList.copy(name = newName.trim())
                         } else {
