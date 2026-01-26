@@ -375,37 +375,38 @@ private fun LazyItemScope.NormalItem(
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
     val interactionSource = remember { MutableInteractionSource() }
 
-    AnimatedContent(
-        targetState = swipeDirection,
-        label = "UndoAnimation",
-        transitionSpec = {
-            if (targetState != null) { // Deleting
-                val slideDirection = if (targetState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
-                slideInHorizontally { width -> -width * slideDirection } togetherWith slideOutHorizontally { width -> width * slideDirection }
-            } else { // Undoing
-                val slideDirection = if (initialState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
-                slideInHorizontally { width -> width * slideDirection } togetherWith slideOutHorizontally { width -> -width * slideDirection }
+    ReorderableItem(
+        reorderableState,
+        key = item.id,
+        modifier = Modifier.padding(start = 8.dp)
+    ) { isDragging ->
+        val elevation by animateDpAsState(
+            if (isDragging) 8.dp else 2.dp,
+            label = "elevation"
+        )
+
+        AnimatedContent(
+            targetState = swipeDirection,
+            label = "UndoAnimation",
+            transitionSpec = {
+                if (targetState != null) { // Deleting
+                    val slideDirection = if (targetState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
+                    slideInHorizontally { width -> -width * slideDirection } togetherWith slideOutHorizontally { width -> width * slideDirection }
+                } else { // Undoing
+                    val slideDirection = if (initialState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
+                    slideInHorizontally { width -> width * slideDirection } togetherWith slideOutHorizontally { width -> -width * slideDirection }
+                }
             }
-        }
-    ) { currentDirection ->
-        if (currentDirection != null) {
-            val itemHeight = itemHeights[item.id]
-            if (itemHeight != null) {
-                UndoRow(
-                    height = itemHeight,
-                    onUndo = onUndoPendingDelete
-                )
-            }
-        } else {
-            ReorderableItem(
-                reorderableState,
-                key = item.id,
-                modifier = Modifier.padding(start = 8.dp)
-            ) { isDragging ->
-                val elevation by animateDpAsState(
-                    if (isDragging) 8.dp else 2.dp,
-                    label = "elevation"
-                )
+        ) { currentDirection ->
+            if (currentDirection != null) {
+                val itemHeight = itemHeights[item.id]
+                if (itemHeight != null) {
+                    UndoRow(
+                        height = itemHeight,
+                        onUndo = onUndoPendingDelete
+                    )
+                }
+            } else {
                 val dismissState = rememberSwipeToDismissBoxState(
                     confirmValueChange = {
                         if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
@@ -584,19 +585,17 @@ private fun LazyItemScope.NormalItem(
 
 @Composable
 private fun UndoRow(height: Dp, onUndo: () -> Unit) {
-    Box (modifier = Modifier.padding(start = 8.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(height)
-                .clip(CardDefaults.shape)
-                .background(Color.Red.copy(alpha = 0.8f))
-                .clickable(onClick = onUndo),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("UNDO", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(CardDefaults.shape)
+            .background(Color.Red.copy(alpha = 0.8f))
+            .clickable(onClick = onUndo),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("UNDO", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }
 
