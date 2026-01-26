@@ -5,11 +5,14 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
@@ -85,10 +88,12 @@ fun SingleSection(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
+                    Row (
                         modifier = Modifier
                             .weight(1f)
-                            .padding(vertical = 8.dp, horizontal = 8.dp)
+                            .padding(vertical = 8.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = list.name,
@@ -136,10 +141,13 @@ fun SingleSection(
                         }
                     }
                     IconButton(
-                        modifier = modifier,
+                        modifier = modifier.height(30.dp).width(30.dp),
                         onClick = {},
                     ) {
-                        Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                        Icon(
+                            Icons.Rounded.DragHandle,
+                            contentDescription = "Reorder"
+                        )
                     }
                 }
             }

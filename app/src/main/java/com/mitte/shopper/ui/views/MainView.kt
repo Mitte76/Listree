@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -26,6 +27,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -33,10 +35,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +52,7 @@ import com.mitte.shopper.ShoppingViewModel
 import com.mitte.shopper.ui.models.ListType
 import com.mitte.shopper.ui.models.ShoppingList
 import com.mitte.shopper.ui.theme.ShopperTheme
+import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -63,7 +68,18 @@ fun MainView(
     var listToEditId by rememberSaveable { mutableStateOf<Int?>(null) }
     var showAddSubListDialog by rememberSaveable { mutableStateOf(false) }
     var parentGroupId by rememberSaveable { mutableStateOf<Int?>(null) }
+
     var listToMove by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
+    val bottomSheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+
+    fun closeMoveSheet() {
+        scope.launch {
+            bottomSheetState.hide()
+            // This line will only run AFTER the hide() animation is complete.
+            listToMove = null
+        }
+    }
     val lazyListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -72,6 +88,12 @@ fun MainView(
 
     fun getAllLists(lists: List<ShoppingList>): List<ShoppingList> {
         return lists + lists.flatMap { getAllLists(it.subLists ?: emptyList()) }
+    }
+
+    fun getFlatShoppingListWithDepth(lists: List<ShoppingList>, depth: Int = 0): List<Pair<ShoppingList, Int>> {
+        return lists.flatMap { list ->
+            listOf(Pair(list, depth)) + getFlatShoppingListWithDepth(list.subLists ?: emptyList(), depth + 1)
+        }
     }
 
     Scaffold(
@@ -149,21 +171,60 @@ fun MainView(
         }
 
         listToMove?.let { list ->
-            MoveListDialog(
-                list = list,
-                destinations = getAllLists(shoppingLists).filter { it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id },
+
+            ModalBottomSheet(
                 onDismissRequest = { listToMove = null },
-                onConfirm = { destinationId ->
-                    list.parentId?.let {
-                        viewModel.moveSubListToNewGroup(
-                            list.id,
-                            it,
-                            destinationId
-                        )
+                sheetState = bottomSheetState
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Move ${list.name} to:",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    LazyColumn {
+                        // Get the list of possible destinations
+                        val destinations = getFlatShoppingListWithDepth(shoppingLists).filter { (it, _) ->
+                            it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id
+                        }
+
+                        items(destinations) { (destination, depth) ->
+                            Text(
+                                text = destination.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        list.parentId?.let { parentId ->
+                                            viewModel.moveSubListToNewGroup(
+                                                list.id,
+                                                parentId,
+                                                destination.id
+                                            )
+                                        }
+                                        closeMoveSheet() // Close sheet after selection
+                                    }
+                                    .padding(start = (16 * depth).dp, end = 16.dp)
+                            )
+                        }
                     }
-                    listToMove = null
                 }
-            )
+            }
+
+//            MoveListDialog(
+//                list = list,
+//                destinations = getAllLists(shoppingLists).filter { it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id },
+//                onDismissRequest = { listToMove = null },
+//                onConfirm = { destinationId ->
+//                    list.parentId?.let {
+//                        viewModel.moveSubListToNewGroup(
+//                            list.id,
+//                            it,
+//                            destinationId
+//                        )
+//                    }
+//                    listToMove = null
+//                }
+//            )
         }
 
         LazyColumn(
@@ -197,10 +258,13 @@ fun MainView(
 
                             iconButton = {
                                 IconButton(
-                                    modifier = Modifier.draggableHandle(),
+                                    modifier = Modifier.draggableHandle().height(30.dp).width(30.dp),
                                     onClick = {},
                                 ) {
-                                    Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                                    Icon(
+                                        Icons.Rounded.DragHandle,
+                                        contentDescription = "Reorder"
+                                    )
                                 }
                             }
                         )
@@ -237,7 +301,7 @@ private fun MoveListDialog(
             shadowElevation = 8.dp,
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Move \"${list.name}\" to:", style = MaterialTheme.typography.titleLarge)
+                Text("Move ${list.name} to:", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(16.dp))
                 LazyColumn {
                     items(destinations) { destination ->

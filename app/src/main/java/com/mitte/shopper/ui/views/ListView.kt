@@ -6,9 +6,13 @@ import android.content.Intent
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -110,7 +114,7 @@ fun ListView(
 
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
-    var itemsPendingDeletion by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var itemsPendingDeletion by remember { mutableStateOf<Map<Int, SwipeToDismissBoxValue>>(emptyMap()) }
     val itemHeights = remember { mutableStateMapOf<Int, Dp>() }
     val density = LocalDensity.current
     val lazyListState = rememberLazyListState()
@@ -174,7 +178,16 @@ fun ListView(
                 items = items,
                 key = { item -> item.id }
             ) { item ->
-                val isPendingDeletion = itemsPendingDeletion.contains(item.id)
+                val swipeDirection = itemsPendingDeletion[item.id]
+                LaunchedEffect(swipeDirection, item.id) {
+                    if (swipeDirection != null) {
+                        delay(2500)
+                        if (itemsPendingDeletion.containsKey(item.id)) {
+                            viewModel.removeItem(listId, item)
+                        }
+                    }
+                }
+
                 if (item.isHeader) {
                     HeaderItem(
                         reorderableState, item, density,
@@ -189,7 +202,7 @@ fun ListView(
                     NormalItem(
                         reorderableState,
                         item,
-                        isPendingDeletion,
+                        swipeDirection,
                         density,
                         itemHeights,
                         viewModel,
@@ -197,8 +210,8 @@ fun ListView(
                         onEditItem = { selectedItem ->
                             itemToEdit = selectedItem
                         },
-                        onStartPendingDelete = {
-                            itemsPendingDeletion = itemsPendingDeletion + item.id
+                        onStartPendingDelete = { direction ->
+                            itemsPendingDeletion = itemsPendingDeletion + (item.id to direction)
                         },
                         onUndoPendingDelete = {
                             itemsPendingDeletion = itemsPendingDeletion - item.id
@@ -349,209 +362,215 @@ fun LazyItemScope.HeaderItem(
 private fun LazyItemScope.NormalItem(
     reorderableState: ReorderableLazyListState,
     item: ShoppingItem,
-    isPendingDeletion: Boolean,
+    swipeDirection: SwipeToDismissBoxValue?,
     density: Density,
     itemHeights: SnapshotStateMap<Int, Dp>,
     viewModel: ShoppingViewModel,
     listId: Int,
     onEditItem: (ShoppingItem) -> Unit,
-    onStartPendingDelete: () -> Unit,
+    onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
     onUndoPendingDelete: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
     val interactionSource = remember { MutableInteractionSource() }
 
-    LaunchedEffect(isPendingDeletion, item.id) {
-        if (isPendingDeletion) {
-            delay(2500)
-            if (isPendingDeletion) {
-                viewModel.removeItem(listId, item)
+    AnimatedContent(
+        targetState = swipeDirection,
+        label = "UndoAnimation",
+        transitionSpec = {
+            if (targetState != null) { // Deleting
+                val slideDirection = if (targetState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
+                slideInHorizontally { width -> -width * slideDirection } togetherWith slideOutHorizontally { width -> width * slideDirection }
+            } else { // Undoing
+                val slideDirection = if (initialState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
+                slideInHorizontally { width -> width * slideDirection } togetherWith slideOutHorizontally { width -> -width * slideDirection }
             }
         }
-    }
-    if (isPendingDeletion) {
-        val itemHeight = itemHeights[item.id]
-        if (itemHeight != null) {
-            UndoRow(
-                height = itemHeight,
-                onUndo = onUndoPendingDelete
-            )
-        }
-    } else {
-        ReorderableItem(
-            reorderableState,
-            key = item.id,
-            modifier = Modifier.padding(start = 8.dp)
-        ) { isDragging ->
-            val elevation by animateDpAsState(
-                if (isDragging) 8.dp else 2.dp,
-                label = "elevation"
-            )
-            val dismissState = rememberSwipeToDismissBoxState(
-                confirmValueChange = {
-                    if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
-                        onStartPendingDelete()
-                        true
-                    } else {
-                        false
-                    }
-                },
-                positionalThreshold = { it * .50f }
-            )
-            SwipeToDismissBox(
-                state = dismissState,
-                enableDismissFromStartToEnd = true,
-                enableDismissFromEndToStart = true,
-                backgroundContent = {
-                    val color by animateColorAsState(
-                        targetValue = when (dismissState.dismissDirection) {
-                            SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> Color.Red.copy(
-                                alpha = 0.8f
-                            )
+    ) { currentDirection ->
+        if (currentDirection != null) {
+            val itemHeight = itemHeights[item.id]
+            if (itemHeight != null) {
+                UndoRow(
+                    height = itemHeight,
+                    onUndo = onUndoPendingDelete
+                )
+            }
+        } else {
+            ReorderableItem(
+                reorderableState,
+                key = item.id,
+                modifier = Modifier.padding(start = 8.dp)
+            ) { isDragging ->
+                val elevation by animateDpAsState(
+                    if (isDragging) 8.dp else 2.dp,
+                    label = "elevation"
+                )
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = {
+                        if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                            onStartPendingDelete(it)
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                    positionalThreshold = { it * .50f }
+                )
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = true,
+                    enableDismissFromEndToStart = true,
+                    backgroundContent = {
+                        val color by animateColorAsState(
+                            targetValue = when (dismissState.dismissDirection) {
+                                SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> Color.Red.copy(
+                                    alpha = 0.8f
+                                )
 
-                            else -> Color.Transparent
-                        }, label = "background color"
-                    )
-                    val scale by animateFloatAsState(
-                        targetValue = if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
-                        label = "icon scale"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CardDefaults.shape)
-                            .background(color)
-                            .padding(horizontal = 20.dp),
-                        contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete Item",
-                            tint = Color.White,
-                            modifier = Modifier.scale(scale)
+                                else -> Color.Transparent
+                            }, label = "background color"
                         )
-                    }
-                }
-            ) {
-                Surface(
-                    shape = CardDefaults.shape,
-                    color = ShopperTheme.colors.itemContainer,
-                    contentColor = ShopperTheme.colors.itemContent,
-                    shadowElevation = elevation,
-                    modifier = Modifier
-                        .onSizeChanged { size ->
-                            with(density) {
-                                itemHeights[item.id] = size.height.toDp()
-                            }
-                        }
-                        .indication(interactionSource, rememberRipple())
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onPress = { offset ->
-                                    val press = PressInteraction.Press(offset)
-                                    interactionSource.emit(press)
-                                    try {
-                                        awaitRelease()
-                                        interactionSource.emit(
-                                            PressInteraction.Release(
-                                                press
-                                            )
-                                        )
-                                    } catch (c: CancellationException) {
-                                        interactionSource.emit(PressInteraction.Cancel(press))
-                                    }
-                                },
-                                onTap = { viewModel.toggleChecked(listId, item) },
-                                onLongPress = { offset ->
-                                    showMenu = true
-                                    pressOffset = with(density) {
-                                        DpOffset(
-                                            offset.x.toDp(),
-                                            offset.y.toDp()
-                                        )
-                                    }
-                                }
+                        val scale by animateFloatAsState(
+                            targetValue = if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
+                            label = "icon scale"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CardDefaults.shape)
+                                .background(color)
+                                .padding(horizontal = 20.dp),
+                            contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete Item",
+                                tint = Color.White,
+                                modifier = Modifier.scale(scale)
                             )
                         }
+                    }
                 ) {
-                    CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
-
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(horizontal = 8.dp, vertical = 8.dp)
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.CenterStart
-                                    ) {
-                                        Text(
-                                            text = item.name,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = if (item.isChecked) Color.Gray else ShopperTheme.colors.itemContent
-                                        )
-                                        if (item.isChecked) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(1.dp)
-                                                    .background(ShopperTheme.colors.strikethrough)
+                    Surface(
+                        shape = CardDefaults.shape,
+                        color = ShopperTheme.colors.itemContainer,
+                        contentColor = ShopperTheme.colors.itemContent,
+                        shadowElevation = elevation,
+                        modifier = Modifier
+                            .onSizeChanged { size ->
+                                with(density) {
+                                    itemHeights[item.id] = size.height.toDp()
+                                }
+                            }
+                            .indication(interactionSource, rememberRipple())
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onPress = { offset ->
+                                        val press = PressInteraction.Press(offset)
+                                        interactionSource.emit(press)
+                                        try {
+                                            awaitRelease()
+                                            interactionSource.emit(
+                                                PressInteraction.Release(
+                                                    press
+                                                )
+                                            )
+                                        } catch (c: CancellationException) {
+                                            interactionSource.emit(PressInteraction.Cancel(press))
+                                        }
+                                    },
+                                    onTap = { viewModel.toggleChecked(listId, item) },
+                                    onLongPress = { offset ->
+                                        showMenu = true
+                                        pressOffset = with(density) {
+                                            DpOffset(
+                                                offset.x.toDp(),
+                                                offset.y.toDp()
                                             )
                                         }
                                     }
-                                }
+                                )
+                            }
+                    ) {
+                        CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
 
-                                Box {
-                                    IconButton(
-                                        onClick = { showMenu = true },
-                                        modifier = Modifier
-                                            .height(30.dp)
-                                            .width(30.dp),
-                                    ) {
-                                        Icon(
-                                            Icons.Default.MoreVert,
-                                            contentDescription = "Settings for ${item.name}"
-                                        )
-                                    }
-                                    DropdownMenu(
-                                        expanded = showMenu,
-                                        onDismissRequest = { showMenu = false },
-                                        offset = pressOffset
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Edit") },
-                                            onClick = {
-                                                onEditItem(item)
-                                                showMenu = false
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 8.dp, vertical = 8.dp)
+                                                .fillMaxWidth(),
+                                            contentAlignment = Alignment.CenterStart
+                                        ) {
+                                            Text(
+                                                text = item.name,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = if (item.isChecked) Color.Gray else ShopperTheme.colors.itemContent
+                                            )
+                                            if (item.isChecked) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(1.dp)
+                                                        .background(ShopperTheme.colors.strikethrough)
+                                                )
                                             }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Delete") },
-                                            onClick = {
-                                                viewModel.removeItem(listId, item)
-                                                showMenu = false
-                                            }
-                                        )
+                                        }
                                     }
-                                }
-                                Box(modifier = Modifier.padding(end = 8.dp)) {
 
-                                    IconButton(
-                                        modifier = Modifier
-                                            .draggableHandle()
-                                            .height(30.dp)
-                                            .width(30.dp),
-                                        onClick = {},
-                                    ) {
-                                        Icon(
-                                            Icons.Rounded.DragHandle,
-                                            contentDescription = "Reorder"
-                                        )
+                                    Box {
+                                        IconButton(
+                                            onClick = { showMenu = true },
+                                            modifier = Modifier
+                                                .height(30.dp)
+                                                .width(30.dp),
+                                        ) {
+                                            Icon(
+                                                Icons.Default.MoreVert,
+                                                contentDescription = "Settings for ${item.name}"
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false },
+                                            offset = pressOffset
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Edit") },
+                                                onClick = {
+                                                    onEditItem(item)
+                                                    showMenu = false
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Delete") },
+                                                onClick = {
+                                                    viewModel.removeItem(listId, item)
+                                                    showMenu = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                    Box(modifier = Modifier.padding(end = 8.dp)) {
+
+                                        IconButton(
+                                            modifier = Modifier
+                                                .draggableHandle()
+                                                .height(30.dp)
+                                                .width(30.dp),
+                                            onClick = {},
+                                        ) {
+                                            Icon(
+                                                Icons.Rounded.DragHandle,
+                                                contentDescription = "Reorder"
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -565,17 +584,19 @@ private fun LazyItemScope.NormalItem(
 
 @Composable
 private fun UndoRow(height: Dp, onUndo: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(height)
-            .clip(CardDefaults.shape)
-            .background(Color.Red.copy(alpha = 0.8f))
-            .clickable(onClick = onUndo),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text("UNDO", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+    Box (modifier = Modifier.padding(start = 8.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(height)
+                .clip(CardDefaults.shape)
+                .background(Color.Red.copy(alpha = 0.8f))
+                .clickable(onClick = onUndo),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("UNDO", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
     }
 }
 

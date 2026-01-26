@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -106,10 +107,12 @@ fun GroupSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    Column(
+                    Row(
                         modifier = Modifier
                             .weight(1f)
                             .padding(vertical = 8.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = list.name,
@@ -117,7 +120,7 @@ fun GroupSection(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${list.subLists?.size ?: 0} sub-lists",
+                            text = "${list.subLists?.size ?: 0} items",
                             style = MaterialTheme.typography.bodyMedium,
                             color = ShopperTheme.colors.listMetaCount
                         )
@@ -193,7 +196,7 @@ fun GroupSection(
                                     navController = navController,
                                     iconButton = {
                                         IconButton(
-                                            modifier = Modifier.draggableHandle(),
+                                            modifier = Modifier.draggableHandle().height(30.dp).width(30.dp),
                                             onClick = {},
                                         ) {
                                             Icon(
@@ -219,20 +222,28 @@ fun GroupSection(
                         }
                     }
                 }
-                Row(
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 32.dp, top = 8.dp)
-                        .clickable { onAddSubList(list) }
-                        .padding(vertical = 8.dp, horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(start = 24.dp, top = 8.dp)
+                        .clickable { onAddSubList(list) },
+                    shape = CardDefaults.shape,
+                    shadowElevation = 1.dp,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add new sub-list"
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add new sub-list", style = MaterialTheme.typography.bodyMedium)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp, horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Add new sub-list"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add new sub-list", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }
