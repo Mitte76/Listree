@@ -31,8 +31,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -77,7 +75,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -169,7 +166,7 @@ fun ListView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(vertical = 8.dp, horizontal = 8.dp),
+                .padding(vertical = 8.dp/*, horizontal = 8.dp*/),
             verticalArrangement = Arrangement.spacedBy(8.dp)
 
         ) {
@@ -231,16 +228,6 @@ fun LazyItemScope.HeaderItem(
         val interactionSource = remember { MutableInteractionSource() }
         var showMenu by remember { mutableStateOf(false) }
         var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
-        val cardShape = MaterialTheme.shapes.medium as RoundedCornerShape
-        val cornerRadiusPx = cardShape.topStart.toPx(Size.Unspecified, density = density)
-        val halfCornerRadiusPx = cornerRadiusPx / 2
-        val newCardShape = RoundedCornerShape(
-            topStart = CornerSize(halfCornerRadiusPx),
-            topEnd = CornerSize(halfCornerRadiusPx),
-            bottomStart = CornerSize(halfCornerRadiusPx),
-            bottomEnd = CornerSize(halfCornerRadiusPx)
-        )
-
 
         val elevation by animateDpAsState(
             if (isDragging) 8.dp else 2.dp,
@@ -248,16 +235,10 @@ fun LazyItemScope.HeaderItem(
         )
 
         Surface(
-            shape = newCardShape,
             color = ShopperTheme.colors.sectionContainer,
             contentColor = ShopperTheme.colors.sectionContent,
             shadowElevation = elevation,
             modifier = Modifier
-//                .onSizeChanged { size ->
-//                    with(density) {
-//                        itemHeights[item.id] = size.height.toDp()
-//                    }
-//                }
                 .indication(interactionSource, rememberRipple())
                 .pointerInput(Unit) {
                     detectTapGestures(
@@ -296,7 +277,6 @@ fun LazyItemScope.HeaderItem(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                        //                        .padding(8.dp)
                     ) {
                         Text(
                             text = item.name,
@@ -369,7 +349,7 @@ fun LazyItemScope.HeaderItem(
 private fun LazyItemScope.NormalItem(
     reorderableState: ReorderableLazyListState,
     item: ShoppingItem,
-    isPendingDeletion: Boolean, // Pass the boolean result, not the whole set
+    isPendingDeletion: Boolean,
     density: Density,
     itemHeights: SnapshotStateMap<Int, Dp>,
     viewModel: ShoppingViewModel,
@@ -395,11 +375,15 @@ private fun LazyItemScope.NormalItem(
         if (itemHeight != null) {
             UndoRow(
                 height = itemHeight,
-                onUndo = onUndoPendingDelete // Call the lambda
+                onUndo = onUndoPendingDelete
             )
         }
     } else {
-        ReorderableItem(reorderableState, key = item.id) { isDragging ->
+        ReorderableItem(
+            reorderableState,
+            key = item.id,
+            modifier = Modifier.padding(start = 8.dp)
+        ) { isDragging ->
             val elevation by animateDpAsState(
                 if (isDragging) 8.dp else 2.dp,
                 label = "elevation"

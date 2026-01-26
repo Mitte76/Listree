@@ -3,7 +3,6 @@ package com.mitte.shopper.ui.theme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
-// Custom Semantic Colors
 @Immutable
 data class ShopperColors(
     val topAppBarContainer: Color,
@@ -20,34 +19,32 @@ data class ShopperColors(
     val strikethrough: Color
 )
 
-// A discrete and calming slate blue/grey palette
 val LightShopperColors = ShopperColors(
-    topAppBarContainer = Color(0xFF4A6A8A),      // Deep, muted blue
-    topAppBarTitle = Color(0xFFFFFFFF),          // White
-    listMetaCount = Color(0xFF616161),           // Dark grey for good contrast
-    groupCardContainer = Color(0xFFBBBBBB),      // A bit darker blue
-    groupCardContent = Color(0xFF212121),         // High-contrast dark text
-    singleCardContainer = Color(0xFFDDDDDD),     // Light blue background
-    singleCardContent = Color(0xFF212121),         // High-contrast dark text
-    itemContainer = Color(0xFFEEEEEE),           // Light grey
-    itemContent = Color(0xFF212121),               // High-contrast dark text
+    topAppBarContainer = Color(0xFF4A6A8A),
+    topAppBarTitle = Color(0xFFFFFFFF),
+    listMetaCount = Color(0xFF616161),
+    groupCardContainer = Color(0xFFBBBBBB),
+    groupCardContent = Color(0xFF212121),
+    singleCardContainer = Color(0xFFDDDDDD),
+    singleCardContent = Color(0xFF212121),
+    itemContainer = Color(0xFFEEEEEE),
+    itemContent = Color(0xFF212121),
     sectionContainer = Color(0xFF212121),
     sectionContent = Color(0xFF212121),
-    strikethrough = Color(0xFFAA5A64)            // Strikethrough color
+    strikethrough = Color(0xFFAA5A64)
 )
 
 val DarkShopperColors = ShopperColors(
-    topAppBarContainer = Color(0xFF3A4A5D),      // Muted slate blue
-    topAppBarTitle = Color(0xFFDCE4EC),          // Light, almost-white blue-grey
-    listMetaCount = Color(0xFFB0C0D0),           // Desaturated, light blue-grey
-    groupCardContainer = Color(0xFF282828),      // A distinct, lighter slate for groups
-    groupCardContent = Color(0xFFDCE4EC),         // Light text color
-    singleCardContainer = Color(0xFF3B3B3B),     // Main dark background
-    singleCardContent = Color(0xFFDCE4EC),         // Light text color
-    itemContainer = Color(0xFF525252),           // Slightly lighter cards for items
-    itemContent = Color(0xFFDCE4EC),               // Light text color
-    sectionContainer = Color(0xFFDCE4EC),
-    sectionContent = Color(0xFF212121),
-
-    strikethrough = Color(0xFFF44336)            // Strikethrough color
+    topAppBarContainer = Color(0xFF3A4A5D),
+    topAppBarTitle = Color(0xFFDCE4EC),
+    listMetaCount = Color(0xFFB0C0D0),
+    groupCardContainer = Color(0xFF282828),
+    groupCardContent = Color(0xFFDCE4EC),
+    singleCardContainer = Color(0xFF3B3B3B),
+    singleCardContent = Color(0xFFDCE4EC),
+    itemContainer = Color(0xFF525252),
+    itemContent = Color(0xFFDCE4EC),
+    sectionContainer = Color(0xFF462801),
+    sectionContent = Color(0xFFEEEEEE),
+    strikethrough = Color(0xFFF44336)
 )
