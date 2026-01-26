@@ -11,7 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mitte.shopper.ui.theme.ShopperTheme
-import com.mitte.shopper.ui.views.ShoppingList
+import com.mitte.shopper.ui.views.ListView
 import com.mitte.shopper.ui.views.MainView
 
 class MainActivity : ComponentActivity() {
@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("listId") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val listId = backStackEntry.arguments?.getInt("listId") ?: -1
-                        ShoppingList(
+                        ListView(
                             viewModel = shoppingViewModel,
                             listId = listId
                         )

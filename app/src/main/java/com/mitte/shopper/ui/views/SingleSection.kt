@@ -43,7 +43,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun SingleList(
+fun SingleSection(
     list: ShoppingList,
     elevation: Dp,
     onListToEdit: (ShoppingList) -> Unit,

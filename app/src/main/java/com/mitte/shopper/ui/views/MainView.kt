@@ -182,7 +182,7 @@ fun MainView(
                     )
 
                     if (list.type == ListType.GROUP_LIST) {
-                        GroupTest(
+                        GroupSection(
                             list = list,
                             elevation = elevation,
                             onListToEdit = { listToEditId = it.id },
@@ -205,7 +205,7 @@ fun MainView(
                             }
                         )
                     } else {
-                        SingleList(
+                        SingleSection(
                             list = list,
                             elevation = elevation,
                             onListToEdit = { listToEditId = it.id },

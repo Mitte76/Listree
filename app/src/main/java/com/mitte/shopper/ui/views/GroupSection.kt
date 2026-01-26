@@ -55,7 +55,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupTest(
+fun GroupSection(
     list: ShoppingList,
     elevation: Dp,
     onListToEdit: (ShoppingList) -> Unit,
@@ -183,7 +183,7 @@ fun GroupTest(
                     key(item.id) {
                         ReorderableItem {
                             if (item.type == ListType.GROUP_LIST) {
-                                GroupTest(
+                                GroupSection(
                                     list = item,
                                     elevation = elevation,
                                     onListToEdit = onListToEdit,
@@ -205,7 +205,7 @@ fun GroupTest(
                                 )
 
                             } else {
-                                SingleList(
+                                SingleSection(
                                     list = item,
                                     elevation = elevation,
                                     onListToEdit = onListToEdit,
