@@ -15,6 +15,8 @@ data class ShopperColors(
     val singleCardContent: Color,
     val itemContainer: Color,
     val itemContent: Color,
+    val sectionContainer: Color,
+    val sectionContent: Color,
     val strikethrough: Color
 )
 
@@ -29,6 +31,8 @@ val LightShopperColors = ShopperColors(
     singleCardContent = Color(0xFF212121),         // High-contrast dark text
     itemContainer = Color(0xFFEEEEEE),           // Light grey
     itemContent = Color(0xFF212121),               // High-contrast dark text
+    sectionContainer = Color(0xFF212121),
+    sectionContent = Color(0xFF212121),
     strikethrough = Color(0xFFAA5A64)            // Strikethrough color
 )
 
@@ -42,5 +46,8 @@ val DarkShopperColors = ShopperColors(
     singleCardContent = Color(0xFFDCE4EC),         // Light text color
     itemContainer = Color(0xFF525252),           // Slightly lighter cards for items
     itemContent = Color(0xFFDCE4EC),               // Light text color
+    sectionContainer = Color(0xFFDCE4EC),
+    sectionContent = Color(0xFF212121),
+
     strikethrough = Color(0xFFF44336)            // Strikethrough color
 )

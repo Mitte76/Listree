@@ -134,13 +134,15 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
             updatedList
         }
     }
-
     fun deleteList(listId: Int) {
         _shoppingLists.update { currentLists ->
-            val updatedList = currentLists.filterNot { it.id == listId }
-                .map { list ->
-                    list.copy(subLists = list.subLists?.filterNot { subList -> subList.id == listId })
+            fun removeRecursively(lists: List<ShoppingList>): List<ShoppingList> {
+                val filteredList = lists.filterNot { it.id == listId }
+                return filteredList.map { list ->
+                    list.copy(subLists = list.subLists?.let { removeRecursively(it) })
                 }
+            }
+            val updatedList = removeRecursively(currentLists)
             repository.saveShoppingLists(updatedList)
             updatedList
         }
@@ -303,18 +305,18 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun addItem(listId: Int, itemName: String) {
+    fun addItem(listId: Int, itemName: String, isHeader: Boolean = false) {
         _shoppingLists.update { currentLists ->
             val updatedList = currentLists.map { list ->
                 if (list.id == listId) {
                     val newId = (list.items?.maxOfOrNull { it.id } ?: (listId * 1000)) + 1
-                    val newItem = ShoppingItem(id = newId, name = itemName.trim())
+                    val newItem = ShoppingItem(id = newId, name = itemName.trim(), isHeader = isHeader)
                     list.copy(items = (list.items ?: emptyList()) + newItem)
                 } else {
                     list.copy(subLists = list.subLists?.map { subList ->
                         if (subList.id == listId) {
                             val newId = (subList.items?.maxOfOrNull { it.id } ?: (listId * 1000)) + 1
-                            val newItem = ShoppingItem(id = newId, name = itemName.trim())
+                            val newItem = ShoppingItem(id = newId, name = itemName.trim(), isHeader = isHeader)
                             subList.copy(items = (subList.items ?: emptyList()) + newItem)
                         } else {
                             subList

@@ -25,25 +25,32 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -56,22 +63,24 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
@@ -137,8 +146,8 @@ fun ListView(
         if (showAddItemDialog) {
             AddItemDialog(
                 onDismissRequest = { showAddItemDialog = false },
-                onConfirm = { itemName ->
-                    viewModel.addItem(listId, itemName)
+                onConfirm = { itemName, isHeader ->
+                    viewModel.addItem(listId, itemName, isHeader)
                     showAddItemDialog = false
                 }
             )
@@ -169,30 +178,189 @@ fun ListView(
                 key = { item -> item.id }
             ) { item ->
                 val isPendingDeletion = itemsPendingDeletion.contains(item.id)
+                if (item.isHeader) {
+                    HeaderItem(
+                        reorderableState, item, density,
+                        onEditItem = { selectedItem ->
+                            itemToEdit = selectedItem
+                        },
+                        viewModel
+                    )
 
-                NormalItem(
-                    reorderableState,
-                    item,
-                    isPendingDeletion,
-                    density,
-                    itemHeights,
-                    viewModel,
-                    listId,
-                    onEditItem = { selectedItem ->
-                        itemToEdit = selectedItem
-                    },
-                    onStartPendingDelete = {
-                        itemsPendingDeletion = itemsPendingDeletion + item.id
-                    },
-                    onUndoPendingDelete = {
-                        itemsPendingDeletion = itemsPendingDeletion - item.id
-                    }
-                )
+                } else {
+
+                    NormalItem(
+                        reorderableState,
+                        item,
+                        isPendingDeletion,
+                        density,
+                        itemHeights,
+                        viewModel,
+                        listId,
+                        onEditItem = { selectedItem ->
+                            itemToEdit = selectedItem
+                        },
+                        onStartPendingDelete = {
+                            itemsPendingDeletion = itemsPendingDeletion + item.id
+                        },
+                        onUndoPendingDelete = {
+                            itemsPendingDeletion = itemsPendingDeletion - item.id
+                        }
+                    )
+                }
             }
             item {
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LazyItemScope.HeaderItem(
+    reorderableState: ReorderableLazyListState,
+    item: ShoppingItem,
+    density: Density,
+    onEditItem: (ShoppingItem) -> Unit,
+    viewModel: ShoppingViewModel,
+
+    ) {
+    ReorderableItem(reorderableState, key = item.id) { isDragging ->
+
+        val interactionSource = remember { MutableInteractionSource() }
+        var showMenu by remember { mutableStateOf(false) }
+        var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
+        val cardShape = MaterialTheme.shapes.medium as RoundedCornerShape
+        val cornerRadiusPx = cardShape.topStart.toPx(Size.Unspecified, density = density)
+        val halfCornerRadiusPx = cornerRadiusPx / 2
+        val newCardShape = RoundedCornerShape(
+            topStart = CornerSize(halfCornerRadiusPx),
+            topEnd = CornerSize(halfCornerRadiusPx),
+            bottomStart = CornerSize(halfCornerRadiusPx),
+            bottomEnd = CornerSize(halfCornerRadiusPx)
+        )
+
+
+        val elevation by animateDpAsState(
+            if (isDragging) 8.dp else 2.dp,
+            label = "elevation"
+        )
+
+        Surface(
+            shape = newCardShape,
+            color = ShopperTheme.colors.sectionContainer,
+            contentColor = ShopperTheme.colors.sectionContent,
+            shadowElevation = elevation,
+            modifier = Modifier
+//                .onSizeChanged { size ->
+//                    with(density) {
+//                        itemHeights[item.id] = size.height.toDp()
+//                    }
+//                }
+                .indication(interactionSource, rememberRipple())
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = { offset ->
+                            val press = PressInteraction.Press(offset)
+                            interactionSource.emit(press)
+                            try {
+                                awaitRelease()
+                                interactionSource.emit(
+                                    PressInteraction.Release(
+                                        press
+                                    )
+                                )
+                            } catch (c: CancellationException) {
+                                interactionSource.emit(PressInteraction.Cancel(press))
+                            }
+                        },
+                        onTap = { },
+                        onLongPress = { offset ->
+                            showMenu = true
+                            pressOffset = with(density) {
+                                DpOffset(
+                                    offset.x.toDp(),
+                                    offset.y.toDp()
+                                )
+                            }
+                        }
+                    )
+                }
+        )
+        {
+            CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+
+                Box {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                        //                        .padding(8.dp)
+                    ) {
+                        Text(
+                            text = item.name,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 8.dp)
+                        )
+                        Box {
+                            IconButton(
+                                onClick = { showMenu = true },
+                                modifier = Modifier
+                                    .height(30.dp)
+                                    .width(30.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = "Settings for ${item.name}"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                                offset = pressOffset
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Edit") },
+                                    onClick = {
+                                        onEditItem(item)
+                                        showMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Delete") },
+                                    onClick = {
+                                        viewModel.removeItem(item.id, item)
+                                        showMenu = false
+                                    }
+                                )
+                            }
+                        }
+
+                        Box(modifier = Modifier.padding(end = 8.dp)) {
+                            IconButton(
+                                modifier = Modifier
+                                    .draggableHandle()
+                                    .height(30.dp)
+                                    .width(30.dp),
+                                onClick = {},
+
+                                ) {
+                                Icon(
+                                    Icons.Rounded.DragHandle,
+                                    contentDescription = "Reorder",
+                                    modifier = Modifier.size(24.dp)
+
+
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }
 
@@ -217,8 +385,6 @@ private fun LazyItemScope.NormalItem(
     LaunchedEffect(isPendingDeletion, item.id) {
         if (isPendingDeletion) {
             delay(2500)
-            // The ViewModel call happens in the parent now, so this check is simpler
-            // We just need to know if it's still pending after the delay
             if (isPendingDeletion) {
                 viewModel.removeItem(listId, item)
             }
@@ -326,63 +492,85 @@ private fun LazyItemScope.NormalItem(
                             )
                         }
                 ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 0.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(horizontal = 8.dp, vertical = 8.dp)
-                                        .fillMaxWidth(),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    Text(
-                                        text = item.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = if (item.isChecked) Color.Gray else ShopperTheme.colors.itemContent
-                                    )
-                                    if (item.isChecked) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(1.dp)
-                                                .background(ShopperTheme.colors.strikethrough)
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(horizontal = 8.dp, vertical = 8.dp)
+                                            .fillMaxWidth(),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        Text(
+                                            text = item.name,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = if (item.isChecked) Color.Gray else ShopperTheme.colors.itemContent
+                                        )
+                                        if (item.isChecked) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(1.dp)
+                                                    .background(ShopperTheme.colors.strikethrough)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Box {
+                                    IconButton(
+                                        onClick = { showMenu = true },
+                                        modifier = Modifier
+                                            .height(30.dp)
+                                            .width(30.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Default.MoreVert,
+                                            contentDescription = "Settings for ${item.name}"
+                                        )
+                                    }
+                                    DropdownMenu(
+                                        expanded = showMenu,
+                                        onDismissRequest = { showMenu = false },
+                                        offset = pressOffset
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Edit") },
+                                            onClick = {
+                                                onEditItem(item)
+                                                showMenu = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Delete") },
+                                            onClick = {
+                                                viewModel.removeItem(listId, item)
+                                                showMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                                Box(modifier = Modifier.padding(end = 8.dp)) {
+
+                                    IconButton(
+                                        modifier = Modifier
+                                            .draggableHandle()
+                                            .height(30.dp)
+                                            .width(30.dp),
+                                        onClick = {},
+                                    ) {
+                                        Icon(
+                                            Icons.Rounded.DragHandle,
+                                            contentDescription = "Reorder"
                                         )
                                     }
                                 }
                             }
-                            IconButton(
-                                modifier = Modifier.draggableHandle(),
-                                onClick = {},
-                            ) {
-                                Icon(
-                                    Icons.Rounded.DragHandle,
-                                    contentDescription = "Reorder"
-                                )
-                            }
-                        }
-
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            offset = pressOffset
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Edit") },
-                                onClick = {
-                                    onEditItem(item)
-                                    showMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Delete") },
-                                onClick = {
-                                    viewModel.removeItem(listId, item)
-                                    showMenu = false
-                                }
-                            )
                         }
                     }
                 }
@@ -410,10 +598,10 @@ private fun UndoRow(height: Dp, onUndo: () -> Unit) {
 @Composable
 private fun AddItemDialog(
     onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String, Boolean) -> Unit
 ) {
-    var itemName by remember { mutableStateOf("") }
-    val context = LocalContext.current
+    var itemName by rememberSaveable { mutableStateOf("") }
+    var isHeader by rememberSaveable { mutableStateOf(false) }
 
     val voiceRecognizerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -432,38 +620,44 @@ private fun AddItemDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Add New Item") },
         text = {
-            OutlinedTextField(
-                value = itemName,
-                onValueChange = { itemName = it },
-                label = { Text("Item Name") },
-                singleLine = true,
-                trailingIcon = {
-                    IconButton(onClick = {
-                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                            putExtra(
-                                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                            )
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "sv-SE")
-                            putExtra(
-                                RecognizerIntent.EXTRA_PROMPT,
-                                "Prata för att lägga till en vara"
-                            )
+            Column() {
+                OutlinedTextField(
+                    value = itemName,
+                    onValueChange = { itemName = it },
+                    label = { Text("Item Name") },
+                    singleLine = false,
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(
+                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                )
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "sv-SE")
+                                putExtra(
+                                    RecognizerIntent.EXTRA_PROMPT,
+                                    "Prata för att lägga till en vara"
+                                )
+                            }
+                            try {
+                                voiceRecognizerLauncher.launch(intent)
+                            } catch (e: ActivityNotFoundException) {
+                                println("Voice recognition not available on this device.")
+                            }
+                        }) {
+                            Icon(Icons.Default.Mic, contentDescription = "Voice Input")
                         }
-                        try {
-                            voiceRecognizerLauncher.launch(intent)
-                        } catch (e: ActivityNotFoundException) {
-                            println("Voice recognition not available on this device.")
-                        }
-                    }) {
-                        Icon(Icons.Default.Mic, contentDescription = "Voice Input")
                     }
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = isHeader, onCheckedChange = { isHeader = it })
+                    Text("Is a header")
                 }
-            )
+            }
         },
         confirmButton = {
             Button(
-                onClick = { if (itemName.isNotBlank()) onConfirm(itemName) },
+                onClick = { if (itemName.isNotBlank()) onConfirm(itemName, isHeader) },
                 enabled = itemName.isNotBlank()
             ) { Text("Add") }
         },
@@ -480,6 +674,19 @@ private fun EditItemDialog(
     onConfirm: (String) -> Unit
 ) {
     var itemName by remember { mutableStateOf(item.name) }
+    val voiceRecognizerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+        onResult = { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data = result.data
+                val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                if (!results.isNullOrEmpty()) {
+                    itemName = results[0]
+                }
+            }
+        }
+    )
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Edit Item Name") },
@@ -488,7 +695,29 @@ private fun EditItemDialog(
                 value = itemName,
                 onValueChange = { itemName = it },
                 label = { Text("Item Name") },
-                singleLine = false
+                singleLine = false,
+                trailingIcon = {
+                    IconButton(onClick = {
+                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                            putExtra(
+                                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                            )
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "sv-SE")
+                            putExtra(
+                                RecognizerIntent.EXTRA_PROMPT,
+                                "Prata för att ändra en vara"
+                            )
+                        }
+                        try {
+                            voiceRecognizerLauncher.launch(intent)
+                        } catch (e: ActivityNotFoundException) {
+                            println("Voice recognition not available on this device.")
+                        }
+                    }) {
+                        Icon(Icons.Default.Mic, contentDescription = "Voice Input")
+                    }
+                }
             )
         },
         confirmButton = {
