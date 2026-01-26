@@ -6,11 +6,11 @@ enum class ListType {
 }
 
 data class ShoppingList(
-    val id: Int,
+    val id: String,
     val name: String,
     val type: ListType? = ListType.ITEM_LIST,
     val items: List<ShoppingItem>? = emptyList(),
     val subLists: List<ShoppingList>? = emptyList(),
     val isExpanded: Boolean = false,
-    val parentId: Int? = null
+    val parentId: String? = null
 )

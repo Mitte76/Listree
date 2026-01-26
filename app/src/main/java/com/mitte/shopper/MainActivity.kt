@@ -37,9 +37,9 @@ class MainActivity : ComponentActivity() {
 
                     composable(
                         route = "shoppingItems/{listId}",
-                        arguments = listOf(navArgument("listId") { type = NavType.IntType })
+                        arguments = listOf(navArgument("listId") { type = NavType.StringType })
                     ) { backStackEntry ->
-                        val listId = backStackEntry.arguments?.getInt("listId") ?: -1
+                        val listId = backStackEntry.arguments?.getString("listId") ?: ""
                         ListView(
                             viewModel = shoppingViewModel,
                             listId = listId

@@ -1,8 +1,8 @@
 package com.mitte.shopper.ui.models
 
 data class ShoppingItem(
-    val id: Int,
+    val id: String,
     val name: String,
-    var isChecked: Boolean = false,
-    var isHeader: Boolean = false
+    val isChecked: Boolean = false,
+    val isHeader: Boolean = false
 )

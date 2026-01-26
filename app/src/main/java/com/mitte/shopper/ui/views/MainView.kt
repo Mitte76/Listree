@@ -65,9 +65,9 @@ fun MainView(
     val shoppingLists by viewModel.shoppingLists.collectAsState()
 
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
-    var listToEditId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var listToEditId by rememberSaveable { mutableStateOf<String?>(null) }
     var showAddSubListDialog by rememberSaveable { mutableStateOf(false) }
-    var parentGroupId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var parentGroupId by rememberSaveable { mutableStateOf<String?>(null) }
 
     var listToMove by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
     val bottomSheetState = rememberModalBottomSheetState()
@@ -76,7 +76,6 @@ fun MainView(
     fun closeMoveSheet() {
         scope.launch {
             bottomSheetState.hide()
-            // This line will only run AFTER the hide() animation is complete.
             listToMove = null
         }
     }
@@ -183,7 +182,6 @@ fun MainView(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     LazyColumn {
-                        // Get the list of possible destinations
                         val destinations = getFlatShoppingListWithDepth(shoppingLists).filter { (it, _) ->
                             it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id
                         }
@@ -201,7 +199,7 @@ fun MainView(
                                                 destination.id
                                             )
                                         }
-                                        closeMoveSheet() // Close sheet after selection
+                                        closeMoveSheet()
                                     }
                                     .padding(start = (16 * depth).dp, end = 16.dp)
                             )
@@ -209,22 +207,6 @@ fun MainView(
                     }
                 }
             }
-
-//            MoveListDialog(
-//                list = list,
-//                destinations = getAllLists(shoppingLists).filter { it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id },
-//                onDismissRequest = { listToMove = null },
-//                onConfirm = { destinationId ->
-//                    list.parentId?.let {
-//                        viewModel.moveSubListToNewGroup(
-//                            list.id,
-//                            it,
-//                            destinationId
-//                        )
-//                    }
-//                    listToMove = null
-//                }
-//            )
         }
 
         LazyColumn(
@@ -290,7 +272,7 @@ private fun MoveListDialog(
     list: ShoppingList,
     destinations: List<ShoppingList>,
     onDismissRequest: () -> Unit,
-    onConfirm: (Int) -> Unit
+    onConfirm: (String) -> Unit
 ) {
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(

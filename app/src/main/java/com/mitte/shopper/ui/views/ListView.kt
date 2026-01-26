@@ -104,7 +104,7 @@ import kotlin.coroutines.cancellation.CancellationException
 fun ListView(
     modifier: Modifier = Modifier,
     viewModel: ShoppingViewModel,
-    listId: Int
+    listId: String
 ) {
     val allLists by viewModel.shoppingLists.collectAsState()
     val currentList = allLists.firstOrNull { it.id == listId }
@@ -114,8 +114,8 @@ fun ListView(
 
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
-    var itemsPendingDeletion by remember { mutableStateOf<Map<Int, SwipeToDismissBoxValue>>(emptyMap()) }
-    val itemHeights = remember { mutableStateMapOf<Int, Dp>() }
+    var itemsPendingDeletion by remember { mutableStateOf<Map<String, SwipeToDismissBoxValue>>(emptyMap()) }
+    val itemHeights = remember { mutableStateMapOf<String, Dp>() }
     val density = LocalDensity.current
     val lazyListState = rememberLazyListState()
 
@@ -194,7 +194,8 @@ fun ListView(
                         onEditItem = { selectedItem ->
                             itemToEdit = selectedItem
                         },
-                        viewModel
+                        viewModel,
+                        listId
                     )
 
                 } else {
@@ -234,8 +235,9 @@ fun LazyItemScope.HeaderItem(
     density: Density,
     onEditItem: (ShoppingItem) -> Unit,
     viewModel: ShoppingViewModel,
+    listId: String
 
-    ) {
+) {
     ReorderableItem(reorderableState, key = item.id) { isDragging ->
 
         val interactionSource = remember { MutableInteractionSource() }
@@ -324,7 +326,7 @@ fun LazyItemScope.HeaderItem(
                                 DropdownMenuItem(
                                     text = { Text("Delete") },
                                     onClick = {
-                                        viewModel.removeItem(item.id, item)
+                                        viewModel.removeItem(listId, item)
                                         showMenu = false
                                     }
                                 )
@@ -364,9 +366,9 @@ private fun LazyItemScope.NormalItem(
     item: ShoppingItem,
     swipeDirection: SwipeToDismissBoxValue?,
     density: Density,
-    itemHeights: SnapshotStateMap<Int, Dp>,
+    itemHeights: SnapshotStateMap<String, Dp>,
     viewModel: ShoppingViewModel,
-    listId: Int,
+    listId: String,
     onEditItem: (ShoppingItem) -> Unit,
     onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
     onUndoPendingDelete: () -> Unit
@@ -389,10 +391,10 @@ private fun LazyItemScope.NormalItem(
             targetState = swipeDirection,
             label = "UndoAnimation",
             transitionSpec = {
-                if (targetState != null) { // Deleting
+                if (targetState != null) {
                     val slideDirection = if (targetState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
                     slideInHorizontally { width -> -width * slideDirection } togetherWith slideOutHorizontally { width -> width * slideDirection }
-                } else { // Undoing
+                } else {
                     val slideDirection = if (initialState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
                     slideInHorizontally { width -> width * slideDirection } togetherWith slideOutHorizontally { width -> -width * slideDirection }
                 }
