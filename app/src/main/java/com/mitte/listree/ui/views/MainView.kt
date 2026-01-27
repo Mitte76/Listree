@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
@@ -51,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
@@ -357,7 +359,8 @@ private fun AddListDialog(
                     value = listName,
                     onValueChange = { listName = it },
                     label = { Text(stringResource(R.string.list_name)) },
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isGroup, onCheckedChange = { isGroup = it })
@@ -396,7 +399,8 @@ private fun AddSubListDialog(
                     value = listName,
                     onValueChange = { listName = it },
                     label = { Text(stringResource(R.string.list_name)) },
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isGroup, onCheckedChange = { isGroup = it })
@@ -434,7 +438,8 @@ private fun EditListDialog(
                 value = listName,
                 onValueChange = { listName = it },
                 label = { Text(stringResource(R.string.list_name)) },
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
         },
         confirmButton = {

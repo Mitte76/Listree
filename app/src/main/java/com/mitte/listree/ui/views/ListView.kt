@@ -35,6 +35,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -85,6 +86,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -99,6 +101,7 @@ import kotlinx.coroutines.delay
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -629,7 +632,7 @@ private fun AddItemDialog(
                 val data = result.data
                 val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                 if (!results.isNullOrEmpty()) {
-                    itemName = results[0]
+                    itemName = results[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
                 }
             }
         }
@@ -645,6 +648,7 @@ private fun AddItemDialog(
                     onValueChange = { itemName = it },
                     label = { Text(stringResource(R.string.item_name)) },
                     singleLine = false,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     trailingIcon = {
                         IconButton(onClick = {
                             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -702,7 +706,7 @@ private fun EditItemDialog(
                 val data = result.data
                 val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                 if (!results.isNullOrEmpty()) {
-                    itemName = results[0]
+                    itemName = results[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
                 }
             }
         }
@@ -717,6 +721,7 @@ private fun EditItemDialog(
                 onValueChange = { itemName = it },
                 label = { Text(stringResource(R.string.item_name)) },
                 singleLine = false,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 trailingIcon = {
                     IconButton(onClick = {
                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
