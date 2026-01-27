@@ -1,4 +1,4 @@
-package com.mitte.shopper.ui.theme
+package com.mitte.listree.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color

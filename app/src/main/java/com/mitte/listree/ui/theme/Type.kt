@@ -1,4 +1,4 @@
-package com.mitte.shopper.ui.theme
+package com.mitte.listree.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

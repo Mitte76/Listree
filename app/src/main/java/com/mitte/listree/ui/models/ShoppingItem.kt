@@ -1,4 +1,4 @@
-package com.mitte.shopper.ui.models
+package com.mitte.listree.ui.models
 
 data class ShoppingItem(
     val id: String,

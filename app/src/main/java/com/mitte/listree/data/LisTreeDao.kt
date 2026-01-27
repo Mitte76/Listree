@@ -1,4 +1,4 @@
-package com.mitte.shopper.data
+package com.mitte.listree.data
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -11,38 +11,38 @@ import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface ShoppingDao {
+interface LisTreeDao {
 
     @Transaction
     @Query("SELECT * FROM shopping_lists ORDER BY `order` ASC")
     fun getShoppingListsWithItems(): Flow<List<ShoppingListWithItems>>
 
     @Query("SELECT * FROM shopping_lists WHERE parentId = :listId ORDER BY `order` ASC")
-    fun getSubLists(listId: String): Flow<List<ShoppingList>>
+    fun getSubLists(listId: String): Flow<List<LisTreeList>>
 
     @Query("SELECT * FROM shopping_items WHERE listId = :listId ORDER BY `order` ASC")
-    fun getShoppingItems(listId: String): Flow<List<ShoppingItem>>
+    fun getShoppingItems(listId: String): Flow<List<LisTreeItem>>
 
     @Upsert
-    suspend fun upsertShoppingList(list: ShoppingList)
+    suspend fun upsertShoppingList(list: LisTreeList)
 
     @Update
-    suspend fun updateShoppingList(list: ShoppingList)
+    suspend fun updateShoppingList(list: LisTreeList)
 
     @Delete
-    suspend fun deleteShoppingList(list: ShoppingList)
+    suspend fun deleteShoppingList(list: LisTreeList)
 
     @Query("DELETE FROM shopping_lists")
     suspend fun deleteAllShoppingLists()
 
     @Upsert
-    suspend fun upsertShoppingItem(item: ShoppingItem)
+    suspend fun upsertShoppingItem(item: LisTreeItem)
 
     @Update
-    suspend fun updateShoppingItem(item: ShoppingItem)
+    suspend fun updateShoppingItem(item: LisTreeItem)
 
     @Delete
-    suspend fun deleteShoppingItem(item: ShoppingItem)
+    suspend fun deleteShoppingItem(item: LisTreeItem)
 
     @Query("DELETE FROM shopping_items")
     suspend fun deleteAllShoppingItems()
@@ -54,5 +54,5 @@ interface ShoppingDao {
     suspend fun deleteListShare(listShare: ListShare)
 
     @Query("SELECT * FROM shopping_lists WHERE id IN (SELECT listId FROM list_shares WHERE userId = :userId)")
-    fun getSharedLists(userId: String): Flow<List<ShoppingList>>
+    fun getSharedLists(userId: String): Flow<List<LisTreeList>>
 }

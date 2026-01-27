@@ -1,12 +1,12 @@
-package com.mitte.shopper
+package com.mitte.listree
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mitte.shopper.data.ShoppingRepository
-import com.mitte.shopper.ui.models.ListType
-import com.mitte.shopper.ui.models.ShoppingItem
-import com.mitte.shopper.ui.models.ShoppingList
+import com.mitte.listree.data.LisTreeRepository
+import com.mitte.listree.ui.models.ListType
+import com.mitte.listree.ui.models.ShoppingItem
+import com.mitte.listree.ui.models.ShoppingList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,9 +15,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-class ShoppingViewModel(application: Application) : AndroidViewModel(application) {
+class LisTreeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ShoppingRepository(application)
+    private val repository = LisTreeRepository(application)
 
     private val _shoppingLists = MutableStateFlow<List<ShoppingList>>(emptyList())
     val shoppingLists: StateFlow<List<ShoppingList>> = _shoppingLists.asStateFlow()
@@ -26,7 +26,7 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val allListsWithItems = repository.getShoppingLists().first()
             val allUiLists = allListsWithItems.map { dataListWithItems ->
-                val dataList = dataListWithItems.shoppingList
+                val dataList = dataListWithItems.lisTreeList
                 val uiItems = dataListWithItems.items.map { dataItem ->
                     ShoppingItem(
                         id = dataItem.id,

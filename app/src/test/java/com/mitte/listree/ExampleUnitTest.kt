@@ -1,4 +1,4 @@
-package com.mitte.shopper
+package com.mitte.listree
 
 import org.junit.Test
 

@@ -1,28 +1,30 @@
-package com.mitte.shopper.data
+package com.mitte.listree.data
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.mitte.shopper.data.converters.ListTypeConverter
+import com.mitte.listree.data.converters.ListTypeConverter
 
-@Database(entities = [ShoppingList::class, ShoppingItem::class, ListShare::class], version = 3, exportSchema = false)
+@Database(entities = [LisTreeList::class, LisTreeItem::class, ListShare::class], version = 3, exportSchema = false)
 @TypeConverters(ListTypeConverter::class)
-abstract class ShoppingDatabase : RoomDatabase() {
+abstract class LisTreeDatabase : RoomDatabase() {
 
-    abstract fun shoppingDao(): ShoppingDao
+    abstract fun lisTreeDao(): LisTreeDao
 
     companion object {
         @Volatile
-        private var INSTANCE: ShoppingDatabase? = null
+        private var INSTANCE: LisTreeDatabase? = null
 
-        fun getDatabase(context: Context): ShoppingDatabase {
+        fun getDatabase(context: Context): LisTreeDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    ShoppingDatabase::class.java,
+                    LisTreeDatabase::class.java,
                     "shopping_database"
+//                    "listree_database"
+
                 )
                 .fallbackToDestructiveMigration()
                 .build()

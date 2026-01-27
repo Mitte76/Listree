@@ -1,4 +1,4 @@
-package com.mitte.shopper.data
+package com.mitte.listree.data
 
 import androidx.room.Embedded
 import androidx.room.Entity
@@ -12,7 +12,7 @@ enum class ListType {
 }
 
 @Entity(tableName = "shopping_lists")
-data class ShoppingList(
+data class LisTreeList(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
     val ownerId: String,
@@ -24,10 +24,10 @@ data class ShoppingList(
 )
 
 data class ShoppingListWithItems(
-    @Embedded val shoppingList: ShoppingList,
+    @Embedded val lisTreeList: LisTreeList,
     @Relation(
         parentColumn = "id",
         entityColumn = "listId"
     )
-    val items: List<ShoppingItem>
+    val items: List<LisTreeItem>
 )

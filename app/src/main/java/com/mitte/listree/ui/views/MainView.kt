@@ -1,9 +1,8 @@
-package com.mitte.shopper.ui.views
+package com.mitte.listree.ui.views
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,10 +48,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
-import com.mitte.shopper.ShoppingViewModel
-import com.mitte.shopper.ui.models.ListType
-import com.mitte.shopper.ui.models.ShoppingList
-import com.mitte.shopper.ui.theme.ShopperTheme
+import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.ui.models.ListType
+import com.mitte.listree.ui.models.ShoppingList
+import com.mitte.listree.ui.theme.ShopperTheme
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -60,7 +59,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainView(
-    viewModel: ShoppingViewModel,
+    viewModel: LisTreeViewModel,
     navController: NavController
 ) {
     val shoppingLists by viewModel.shoppingLists.collectAsState()

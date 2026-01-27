@@ -1,4 +1,4 @@
-package com.mitte.shopper.data
+package com.mitte.listree.data
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -9,14 +9,14 @@ import java.util.UUID
     tableName = "shopping_items",
     foreignKeys = [
         ForeignKey(
-            entity = ShoppingList::class,
+            entity = LisTreeList::class,
             parentColumns = ["id"],
             childColumns = ["listId"],
             onDelete = ForeignKey.CASCADE
         )
     ]
 )
-data class ShoppingItem(
+data class LisTreeItem(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
     val listId: String,

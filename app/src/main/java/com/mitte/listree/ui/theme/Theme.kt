@@ -1,4 +1,4 @@
-package com.mitte.shopper.ui.theme
+package com.mitte.listree.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 private val LocalShopperColors = staticCompositionLocalOf { LightShopperColors }
 
 @Composable
-fun ShopperTheme(
+fun LisTreeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit

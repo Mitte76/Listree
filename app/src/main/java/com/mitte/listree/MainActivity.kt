@@ -1,4 +1,4 @@
-package com.mitte.shopper
+package com.mitte.listree
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,18 +10,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.mitte.shopper.ui.theme.ShopperTheme
-import com.mitte.shopper.ui.views.ListView
-import com.mitte.shopper.ui.views.MainView
+import com.mitte.listree.ui.theme.LisTreeTheme
+import com.mitte.listree.ui.views.ListView
+import com.mitte.listree.ui.views.MainView
 
 class MainActivity : ComponentActivity() {
-    private val shoppingViewModel by viewModels<ShoppingViewModel>()
+    private val lisTreeViewModel by viewModels<LisTreeViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ShopperTheme {
+            LisTreeTheme {
                 val navController = rememberNavController()
 
                 NavHost(
@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     composable("shoppingLists") {
                         MainView(
-                            viewModel = shoppingViewModel,
+                            viewModel = lisTreeViewModel,
                             navController = navController
                         )
                     }
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
                         val listId = backStackEntry.arguments?.getString("listId") ?: ""
                         ListView(
-                            viewModel = shoppingViewModel,
+                            viewModel = lisTreeViewModel,
                             listId = listId
                         )
                     }

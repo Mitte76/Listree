@@ -1,4 +1,4 @@
-package com.mitte.shopper
+package com.mitte.listree
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

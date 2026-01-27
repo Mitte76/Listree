@@ -8,11 +8,11 @@ plugins {
 }
 
 configure<ApplicationExtension> {
-    namespace = "com.mitte.shopper"
+    namespace = "com.mitte.listree"
     compileSdk = 36 // Note: compileSdk is now a direct property
 
     defaultConfig {
-        applicationId = "com.mitte.shopper"
+        applicationId = "com.mitte.listree"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

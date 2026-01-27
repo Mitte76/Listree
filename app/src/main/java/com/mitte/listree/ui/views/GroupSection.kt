@@ -1,4 +1,4 @@
-package com.mitte.shopper.ui.views
+package com.mitte.listree.ui.views
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -47,10 +47,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.mitte.shopper.ShoppingViewModel
-import com.mitte.shopper.ui.models.ListType
-import com.mitte.shopper.ui.models.ShoppingList
-import com.mitte.shopper.ui.theme.ShopperTheme
+import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.ui.models.ListType
+import com.mitte.listree.ui.models.ShoppingList
+import com.mitte.listree.ui.theme.ShopperTheme
 import sh.calvin.reorderable.ReorderableColumn
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -62,7 +62,7 @@ fun GroupSection(
     onListToEdit: (ShoppingList) -> Unit,
     onAddSubList: (ShoppingList) -> Unit,
     onMoveItem: (ShoppingList) -> Unit,
-    viewModel: ShoppingViewModel,
+    viewModel: LisTreeViewModel,
     navController: NavController,
     iconButton: @Composable () -> Unit,
 ) {

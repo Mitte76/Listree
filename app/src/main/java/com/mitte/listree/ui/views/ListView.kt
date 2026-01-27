@@ -1,4 +1,4 @@
-package com.mitte.shopper.ui.views
+package com.mitte.listree.ui.views
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -89,10 +89,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mitte.shopper.ShoppingViewModel
-import com.mitte.shopper.ui.models.ShoppingItem
-import com.mitte.shopper.ui.models.ShoppingList
-import com.mitte.shopper.ui.theme.ShopperTheme
+import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.ui.models.ShoppingItem
+import com.mitte.listree.ui.models.ShoppingList
+import com.mitte.listree.ui.theme.ShopperTheme
 import kotlinx.coroutines.delay
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
@@ -103,7 +103,7 @@ import kotlin.coroutines.cancellation.CancellationException
 @Composable
 fun ListView(
     modifier: Modifier = Modifier,
-    viewModel: ShoppingViewModel,
+    viewModel: LisTreeViewModel,
     listId: String
 ) {
     val allLists by viewModel.shoppingLists.collectAsState()
@@ -244,7 +244,7 @@ fun LazyItemScope.HeaderItem(
     item: ShoppingItem,
     density: Density,
     onEditItem: (ShoppingItem) -> Unit,
-    viewModel: ShoppingViewModel,
+    viewModel: LisTreeViewModel,
     listId: String
 
 ) {
@@ -377,7 +377,7 @@ private fun LazyItemScope.NormalItem(
     swipeDirection: SwipeToDismissBoxValue?,
     density: Density,
     itemHeights: SnapshotStateMap<String, Dp>,
-    viewModel: ShoppingViewModel,
+    viewModel: LisTreeViewModel,
     listId: String,
     onEditItem: (ShoppingItem) -> Unit,
     onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,

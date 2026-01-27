@@ -1,4 +1,4 @@
-package com.mitte.shopper.data
+package com.mitte.listree.data
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -10,7 +10,7 @@ import androidx.room.Index
     indices = [Index(value = ["userId"])],
     foreignKeys = [
         ForeignKey(
-            entity = ShoppingList::class,
+            entity = LisTreeList::class,
             parentColumns = ["id"],
             childColumns = ["listId"],
             onDelete = ForeignKey.CASCADE

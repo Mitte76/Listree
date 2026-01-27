@@ -1,4 +1,4 @@
-package com.mitte.shopper.ui.models
+package com.mitte.listree.ui.models
 
 enum class ListType {
     ITEM_LIST,

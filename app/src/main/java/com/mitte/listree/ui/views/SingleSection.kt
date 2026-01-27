@@ -1,4 +1,4 @@
-package com.mitte.shopper.ui.views
+package com.mitte.listree.ui.views
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,9 +38,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.mitte.shopper.ShoppingViewModel
-import com.mitte.shopper.ui.models.ShoppingList
-import com.mitte.shopper.ui.theme.ShopperTheme
+import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.ui.models.ShoppingList
+import com.mitte.listree.ui.theme.ShopperTheme
 import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -52,7 +51,7 @@ fun SingleSection(
     onListToEdit: (ShoppingList) -> Unit,
     onMoveItem: (ShoppingList) -> Unit,
     onTap: () -> Unit,
-    viewModel: ShoppingViewModel,
+    viewModel: LisTreeViewModel,
     modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }

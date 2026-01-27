@@ -1,7 +1,7 @@
-package com.mitte.shopper.data.converters
+package com.mitte.listree.data.converters
 
 import androidx.room.TypeConverter
-import com.mitte.shopper.ui.models.ListType
+import com.mitte.listree.ui.models.ListType
 
 class ListTypeConverter {
     @TypeConverter
