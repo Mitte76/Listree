@@ -42,7 +42,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
@@ -53,7 +52,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalMinimumInteractiveComponentEnforcement
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -65,6 +64,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -128,7 +128,11 @@ fun ListView(
 
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ListItem?>(null) }
-    var itemsPendingDeletion by remember { mutableStateOf<Map<String, SwipeToDismissBoxValue>>(emptyMap()) }
+    var itemsPendingDeletion by remember {
+        mutableStateOf<Map<String, SwipeToDismissBoxValue>>(
+            emptyMap()
+        )
+    }
     val itemHeights = remember { mutableStateMapOf<String, Dp>() }
     val density = LocalDensity.current
     val lazyListState = rememberLazyListState()
@@ -185,7 +189,7 @@ fun ListView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(vertical = 8.dp/*, horizontal = 8.dp*/),
+                .padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
 
         ) {
@@ -269,7 +273,7 @@ fun LazyItemScope.HeaderItem(
             contentColor = LisTreeTheme.colors.sectionContent,
             shadowElevation = elevation,
             modifier = Modifier
-                .indication(interactionSource, rememberRipple())
+                .indication(interactionSource, ripple())
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onPress = { offset ->
@@ -282,7 +286,7 @@ fun LazyItemScope.HeaderItem(
                                         press
                                     )
                                 )
-                            } catch (c: CancellationException) {
+                            } catch (_: CancellationException) {
                                 interactionSource.emit(PressInteraction.Cancel(press))
                             }
                         },
@@ -300,7 +304,7 @@ fun LazyItemScope.HeaderItem(
                 }
         )
         {
-            CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
 
                 Box {
                     Row(
@@ -323,7 +327,10 @@ fun LazyItemScope.HeaderItem(
                             ) {
                                 Icon(
                                     Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.item_settings, item.name)
+                                    contentDescription = stringResource(
+                                        R.string.item_settings,
+                                        item.name
+                                    )
                                 )
                             }
                             DropdownMenu(
@@ -407,10 +414,12 @@ private fun LazyItemScope.NormalItem(
             label = "UndoAnimation",
             transitionSpec = {
                 if (targetState != null) {
-                    val slideDirection = if (targetState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
+                    val slideDirection =
+                        if (targetState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
                     slideInHorizontally { width -> -width * slideDirection } togetherWith slideOutHorizontally { width -> width * slideDirection }
                 } else {
-                    val slideDirection = if (initialState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
+                    val slideDirection =
+                        if (initialState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
                     slideInHorizontally { width -> width * slideDirection } togetherWith slideOutHorizontally { width -> -width * slideDirection }
                 }
             }
@@ -424,19 +433,25 @@ private fun LazyItemScope.NormalItem(
                     )
                 }
             } else {
-                val dismissState = rememberSwipeToDismissBoxState(
-                    confirmValueChange = {
-                        if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
-                            onStartPendingDelete(it)
-                            true
-                        } else {
-                            false
-                        }
-                    },
-                    positionalThreshold = { it * .50f }
-                )
+                val dismissState = rememberSwipeToDismissBoxState(positionalThreshold = { distance -> distance * 0.5f })
+
                 SwipeToDismissBox(
                     state = dismissState,
+                    onDismiss = { dismissValue ->
+                        when (dismissValue) {
+                            SwipeToDismissBoxValue.StartToEnd -> {
+                                onStartPendingDelete(dismissValue)
+                            }
+
+                            SwipeToDismissBoxValue.EndToStart -> {
+                                onStartPendingDelete(dismissValue)
+                            }
+
+                            SwipeToDismissBoxValue.Settled -> {
+                                // no action
+                            }
+                        }
+                    },
                     enableDismissFromStartToEnd = true,
                     enableDismissFromEndToStart = true,
                     backgroundContent = {
@@ -482,7 +497,7 @@ private fun LazyItemScope.NormalItem(
                                     itemHeights[item.id] = size.height.toDp()
                                 }
                             }
-                            .indication(interactionSource, rememberRipple())
+                            .indication(interactionSource, ripple())
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onPress = { offset ->
@@ -495,7 +510,7 @@ private fun LazyItemScope.NormalItem(
                                                     press
                                                 )
                                             )
-                                        } catch (c: CancellationException) {
+                                        } catch (_: CancellationException) {
                                             interactionSource.emit(PressInteraction.Cancel(press))
                                         }
                                     },
@@ -512,7 +527,7 @@ private fun LazyItemScope.NormalItem(
                                 )
                             }
                     ) {
-                        CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
 
                             Box(modifier = Modifier.fillMaxWidth()) {
                                 Row(
@@ -551,7 +566,10 @@ private fun LazyItemScope.NormalItem(
                                         ) {
                                             Icon(
                                                 Icons.Default.MoreVert,
-                                                contentDescription = stringResource(R.string.item_settings, item.name)
+                                                contentDescription = stringResource(
+                                                    R.string.item_settings,
+                                                    item.name
+                                                )
                                             )
                                         }
                                         DropdownMenu(
@@ -612,7 +630,12 @@ private fun UndoRow(height: Dp, onUndo: () -> Unit) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(stringResource(R.string.undo), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(
+            stringResource(R.string.undo),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
     }
 }
 
@@ -632,7 +655,8 @@ private fun AddItemDialog(
                 val data = result.data
                 val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                 if (!results.isNullOrEmpty()) {
-                    itemName = results[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                    itemName =
+                        results[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
                 }
             }
         }
@@ -664,11 +688,14 @@ private fun AddItemDialog(
                             }
                             try {
                                 voiceRecognizerLauncher.launch(intent)
-                            } catch (e: ActivityNotFoundException) {
+                            } catch (_: ActivityNotFoundException) {
                                 println("Voice recognition not available on this device.")
                             }
                         }) {
-                            Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.voice_input))
+                            Icon(
+                                Icons.Default.Mic,
+                                contentDescription = stringResource(R.string.voice_input)
+                            )
                         }
                     }
                 )
@@ -706,7 +733,8 @@ private fun EditItemDialog(
                 val data = result.data
                 val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                 if (!results.isNullOrEmpty()) {
-                    itemName = results[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                    itemName =
+                        results[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
                 }
             }
         }
@@ -737,11 +765,14 @@ private fun EditItemDialog(
                         }
                         try {
                             voiceRecognizerLauncher.launch(intent)
-                        } catch (e: ActivityNotFoundException) {
+                        } catch (_: ActivityNotFoundException) {
                             println("Voice recognition not available on this device.")
                         }
                     }) {
-                        Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.voice_input))
+                        Icon(
+                            Icons.Default.Mic,
+                            contentDescription = stringResource(R.string.voice_input)
+                        )
                     }
                 }
             )

@@ -406,7 +406,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     fun addItem(listId: String, itemName: String, isHeader: Boolean = false) {
         _treeLists.update { currentLists ->
             val parentList = getListById(listId)
-            val nextOrder = (parentList?.items?.map { it.order }?.maxOrNull() ?: -1) + 1
+            val nextOrder = (parentList?.items?.maxOfOrNull { it.order } ?: -1) + 1
             val newItem = ListItem(
                 id = UUID.randomUUID().toString(),
                 name = itemName.trim(),

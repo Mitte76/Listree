@@ -22,17 +22,17 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalMinimumInteractiveComponentEnforcement
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -80,7 +80,7 @@ fun GroupSection(
             contentColor = LisTreeTheme.colors.groupCardContent,
             shadowElevation = elevation,
             modifier = Modifier
-                .indication(interactionSource, rememberRipple())
+                .indication(interactionSource, ripple())
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onPress = { offset ->
@@ -89,7 +89,7 @@ fun GroupSection(
                             try {
                                 awaitRelease()
                                 interactionSource.emit(PressInteraction.Release(press))
-                            } catch (c: CancellationException) {
+                            } catch (_: CancellationException) {
                                 interactionSource.emit(PressInteraction.Cancel(press))
                             }
                         },
@@ -123,18 +123,25 @@ fun GroupSection(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = pluralStringResource(R.plurals.item_count, list.subLists?.size ?: 0, list.subLists?.size ?: 0),
+                            text = pluralStringResource(
+                                R.plurals.item_count,
+                                list.subLists?.size ?: 0,
+                                list.subLists?.size ?: 0
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = LisTreeTheme.colors.listMetaCount
                         )
                     }
-                    CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box {
                                 IconButton(onClick = { showMenu = true }) {
                                     Icon(
                                         Icons.Default.MoreVert,
-                                        contentDescription = stringResource(R.string.item_settings, list.name)
+                                        contentDescription = stringResource(
+                                            R.string.item_settings,
+                                            list.name
+                                        )
                                     )
                                 }
                                 DropdownMenu(
@@ -199,7 +206,10 @@ fun GroupSection(
                                     navController = navController,
                                     iconButton = {
                                         IconButton(
-                                            modifier = Modifier.draggableHandle().height(30.dp).width(30.dp),
+                                            modifier = Modifier
+                                                .draggableHandle()
+                                                .height(30.dp)
+                                                .width(30.dp),
                                             onClick = {},
                                         ) {
                                             Icon(
@@ -245,7 +255,10 @@ fun GroupSection(
                             contentDescription = stringResource(R.string.add_new_sub_list)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.add_new_sub_list), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.add_new_sub_list),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }

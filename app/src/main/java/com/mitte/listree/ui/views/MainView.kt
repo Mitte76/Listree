@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -35,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -54,7 +51,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.mitte.listree.LisTreeViewModel
 import com.mitte.listree.R
@@ -88,15 +84,22 @@ fun MainView(
             listToMove = null
         }
     }
+
     val lazyListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
         viewModel.moveList(from.index, to.index)
     }
 
-    fun getFlatShoppingListWithDepth(lists: List<TreeList>, depth: Int = 0): List<Pair<TreeList, Int>> {
+    fun getFlatShoppingListWithDepth(
+        lists: List<TreeList>,
+        depth: Int = 0
+    ): List<Pair<TreeList, Int>> {
         return lists.flatMap { list ->
-            listOf(Pair(list, depth)) + getFlatShoppingListWithDepth(list.subLists ?: emptyList(), depth + 1)
+            listOf(Pair(list, depth)) + getFlatShoppingListWithDepth(
+                list.subLists ?: emptyList(),
+                depth + 1
+            )
         }
     }
 
@@ -206,7 +209,6 @@ fun MainView(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     LazyColumn {
-                        // Option to move to top-level, only if it's not already there.
                         if (list.parentId != null) {
                             item {
                                 Text(
@@ -225,9 +227,10 @@ fun MainView(
                             }
                         }
 
-                        val destinations = getFlatShoppingListWithDepth(shoppingLists).filter { (it, _) ->
-                            it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id
-                        }
+                        val destinations =
+                            getFlatShoppingListWithDepth(shoppingLists).filter { (it, _) ->
+                                it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id
+                            }
 
                         items(destinations) { (destination, depth) ->
                             Text(
@@ -241,7 +244,12 @@ fun MainView(
                                         )
                                         closeMoveSheet()
                                     }
-                                    .padding(start = (16 * depth).dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
+                                    .padding(
+                                        start = (16 * depth).dp,
+                                        end = 16.dp,
+                                        top = 12.dp,
+                                        bottom = 12.dp
+                                    )
                             )
                         }
                     }
@@ -301,40 +309,6 @@ fun MainView(
                             onTap = { navController.navigate("shoppingItems/${list.id}") },
                             viewModel = viewModel,
                             modifier = Modifier.draggableHandle()
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MoveListDialog(
-    list: TreeList,
-    destinations: List<TreeList>,
-    onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    Dialog(onDismissRequest = onDismissRequest) {
-        Surface(
-            shape = CardDefaults.shape,
-            color = LisTreeTheme.colors.groupCardContainer,
-            contentColor = LisTreeTheme.colors.groupCardContent,
-            tonalElevation = 0.dp,
-            shadowElevation = 8.dp,
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(stringResource(R.string.move_list_to, list.name), style = MaterialTheme.typography.titleLarge)
-                Spacer(modifier = Modifier.height(16.dp))
-                LazyColumn {
-                    items(destinations) { destination ->
-                        Text(
-                            text = destination.name,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onConfirm(destination.id) }
-                                .padding(vertical = 12.dp)
                         )
                     }
                 }

@@ -20,7 +20,7 @@ class LisTreeRepository(context: Context) {
 
     private suspend fun saveListRecursively(list: UiShoppingList, parentId: String?) {
         // TODO: The ownerId is hardcoded here. This should be replaced with the actual owner's ID.
-        val dataList = LisTreeList(list.id, "ownerId", list.name, list.type?.let { com.mitte.listree.data.ListType.valueOf(it.name) }, parentId, order = list.order)
+        val dataList = LisTreeList(list.id, "ownerId", list.name, list.type?.let { ListType.valueOf(it.name) }, parentId, order = list.order)
         shoppingDao.upsertShoppingList(dataList)
         list.items?.forEach { item ->
             val dataItem = LisTreeItem(item.id, list.id, item.name, item.isChecked, item.isHeader, order = item.order)
@@ -29,17 +29,5 @@ class LisTreeRepository(context: Context) {
         list.subLists?.forEach { subList ->
             saveListRecursively(subList, list.id)
         }
-    }
-
-    fun getShoppingItems(listId: String): Flow<List<LisTreeItem>> {
-        return shoppingDao.getShoppingItems(listId)
-    }
-
-    suspend fun saveShoppingItem(item: LisTreeItem) {
-        shoppingDao.upsertShoppingItem(item)
-    }
-
-    suspend fun deleteShoppingItem(item: LisTreeItem) {
-        shoppingDao.deleteShoppingItem(item)
     }
 }
