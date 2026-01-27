@@ -35,21 +35,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mitte.listree.LisTreeViewModel
-import com.mitte.listree.ui.models.ShoppingList
-import com.mitte.listree.ui.theme.ShopperTheme
+import com.mitte.listree.R
+import com.mitte.listree.ui.models.TreeList
+import com.mitte.listree.ui.theme.LisTreeTheme
 import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SingleSection(
-    list: ShoppingList,
+    list: TreeList,
     elevation: Dp,
-    onListToEdit: (ShoppingList) -> Unit,
-    onMoveItem: (ShoppingList) -> Unit,
+    onListToEdit: (TreeList) -> Unit,
+    onMoveItem: (TreeList) -> Unit,
     onTap: () -> Unit,
     viewModel: LisTreeViewModel,
     modifier: Modifier = Modifier
@@ -59,8 +62,8 @@ fun SingleSection(
 
     Surface(
         shape = CardDefaults.shape,
-        color = ShopperTheme.colors.singleCardContainer,
-        contentColor = ShopperTheme.colors.singleCardContent,
+        color = LisTreeTheme.colors.singleCardContainer,
+        contentColor = LisTreeTheme.colors.singleCardContent,
         tonalElevation = 0.dp,
         shadowElevation = elevation,
         modifier = Modifier
@@ -100,16 +103,16 @@ fun SingleSection(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${list.items?.size ?: 0} items",
+                            text = pluralStringResource(R.plurals.item_count, list.items?.size ?: 0, list.items?.size ?: 0),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = ShopperTheme.colors.listMetaCount
+                            color = LisTreeTheme.colors.listMetaCount
                         )
                     }
                     Box {
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 Icons.Default.MoreVert,
-                                contentDescription = "Settings for ${list.name}"
+                                contentDescription = stringResource(R.string.item_settings, list.name)
                             )
                         }
                         DropdownMenu(
@@ -117,21 +120,21 @@ fun SingleSection(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Edit") },
+                                text = { Text(stringResource(R.string.edit)) },
                                 onClick = {
                                     onListToEdit(list)
                                     showMenu = false
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Move to...") },
+                                text = { Text(stringResource(R.string.move_to)) },
                                 onClick = {
                                     onMoveItem(list)
                                     showMenu = false
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete") },
+                                text = { Text(stringResource(R.string.delete)) },
                                 onClick = {
                                     viewModel.deleteList(list.id)
                                     showMenu = false
@@ -145,7 +148,7 @@ fun SingleSection(
                     ) {
                         Icon(
                             Icons.Rounded.DragHandle,
-                            contentDescription = "Reorder"
+                            contentDescription = stringResource(R.string.reorder)
                         )
                     }
                 }

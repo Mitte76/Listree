@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LisTree</string>
+
+    <!-- MainView -->
+    <string name="your_lists">Dina listor</string>
+    <string name="add_new_list">Lägg till ny lista</string>
+    <string name="create_new_list">Skapa ny lista</string>
+    <string name="create_new_sub_list">Skapa ny underlista</string>
+    <string name="edit_list_name">Redigera listnamn</string>
+    <string name="list_name">Listnamn</string>
+    <string name="is_a_group">Är en grupp</string>
+    <string name="move_list_to">Flytta %1$s till:</string>
+    <string name="top_level">Toppnivå</string>
+    <string name="create">Skapa</string>
+    <string name="more_options">Fler alternativ</string>
+    <string name="settings_title">Inställningar</string>
+
+    <!-- ListView -->
+    <string name="not_found">Hittades inte</string>
+    <string name="add_new_item">Lägg till ny post</string>
+    <string name="add_new_item_title">Lägg till ny post</string>
+    <string name="edit_item_name">Redigera postnamn</string>
+    <string name="item_name">Postnamn</string>
+    <string name="is_a_header">Är en rubrik</string>
+    <string name="add">Lägg till</string>
+    <string name="delete_item">Ta bort post</string>
+    <string name="undo">ÅNGRA</string>
+    <string name="voice_prompt_add">Prata för att lägga till en vara</string>
+    <string name="voice_prompt_edit">Prata för att ändra en vara</string>
+
+    <!-- GroupSection -->
+    <plurals name="item_count">
+        <item quantity="one">%1$d post</item>
+        <item quantity="other">%1$d poster</item>
+    </plurals>
+    <string name="move_to">Flytta till…</string>
+    <string name="add_new_sub_list">Lägg till ny underlista</string>
+
+    <!-- SettingsView -->
+    <string name="back_button_description">Tillbaka</string>
+    <string name="language_setting_title">Språk</string>
+
+    <!-- Common -->
+    <string name="item_settings">Inställningar för %1$s</string>
+    <string name="edit">Redigera</string>
+    <string name="delete">Ta bort</string>
+    <string name="reorder">Ändra ordning</string>
+    <string name="cancel">Avbryt</string>
+    <string name="save">Spara</string>
+    <string name="voice_input">Röstinmatning</string>
+</resources>

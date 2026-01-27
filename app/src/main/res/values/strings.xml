@@ -1,3 +1,51 @@
 <resources>
     <string name="app_name">LisTree</string>
+
+    <!-- MainView -->
+    <string name="your_lists">Your Lists</string>
+    <string name="add_new_list">Add new list</string>
+    <string name="create_new_list">Create New List</string>
+    <string name="create_new_sub_list">Create New Sub-List</string>
+    <string name="edit_list_name">Edit List Name</string>
+    <string name="list_name">List Name</string>
+    <string name="is_a_group">Is a group</string>
+    <string name="move_list_to">Move %1$s to:</string>
+    <string name="top_level">Top level</string>
+    <string name="create">Create</string>
+    <string name="more_options">More options</string>
+    <string name="settings_title">Settings</string>
+
+    <!-- ListView -->
+    <string name="not_found">Not Found</string>
+    <string name="add_new_item">Add new item</string>
+    <string name="add_new_item_title">Add New Item</string>
+    <string name="edit_item_name">Edit Item Name</string>
+    <string name="item_name">Item Name</string>
+    <string name="is_a_header">Is a header</string>
+    <string name="add">Add</string>
+    <string name="delete_item">Delete Item</string>
+    <string name="undo">UNDO</string>
+    <string name="voice_prompt_add">Talk to add an item</string>
+    <string name="voice_prompt_edit">Talk to change an item</string>
+
+    <!-- GroupSection -->
+    <plurals name="item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="move_to">Move to…</string>
+    <string name="add_new_sub_list">Add new sub-list</string>
+
+    <!-- SettingsView -->
+    <string name="back_button_description">Back</string>
+    <string name="language_setting_title">Language</string>
+
+    <!-- Common -->
+    <string name="item_settings">Settings for %1$s</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="reorder">Reorder</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="voice_input">Voice Input</string>
 </resources>

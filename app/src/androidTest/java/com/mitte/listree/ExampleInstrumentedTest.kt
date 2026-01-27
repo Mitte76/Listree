@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.mitte.shopper", appContext.packageName)
+        assertEquals("com.mitte.listree", appContext.packageName)
     }
 }

@@ -4,7 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
 @Immutable
-data class ShopperColors(
+data class LisTreeColors(
     val topAppBarContainer: Color,
     val topAppBarTitle: Color,
     val listMetaCount: Color,
@@ -21,7 +21,7 @@ data class ShopperColors(
     val deleteAction: Color
 )
 
-val LightShopperColors = ShopperColors(
+val LightLisTreeColors = LisTreeColors(
     topAppBarContainer = Color(0xFF4A6A8A),
     topAppBarTitle = Color(0xFFFFFFFF),
     listMetaCount = Color(0xFF616161),
@@ -38,7 +38,7 @@ val LightShopperColors = ShopperColors(
     deleteAction = Color(0xFFAA5A64)
 )
 
-val DarkShopperColors = ShopperColors(
+val DarkLisTreeColors = LisTreeColors(
     topAppBarContainer = Color(0xFF3A4A5D),
     topAppBarTitle = Color(0xFFDCE4EC),
     listMetaCount = Color(0xFFB0C0D0),

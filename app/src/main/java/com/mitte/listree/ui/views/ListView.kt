@@ -83,6 +83,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -90,9 +91,10 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mitte.listree.LisTreeViewModel
-import com.mitte.listree.ui.models.ShoppingItem
-import com.mitte.listree.ui.models.ShoppingList
-import com.mitte.listree.ui.theme.ShopperTheme
+import com.mitte.listree.R
+import com.mitte.listree.ui.models.ListItem
+import com.mitte.listree.ui.models.TreeList
+import com.mitte.listree.ui.theme.LisTreeTheme
 import kotlinx.coroutines.delay
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
@@ -106,9 +108,9 @@ fun ListView(
     viewModel: LisTreeViewModel,
     listId: String
 ) {
-    val allLists by viewModel.shoppingLists.collectAsState()
+    val allLists by viewModel.treeLists.collectAsState()
 
-    fun findListById(lists: List<ShoppingList>, id: String): ShoppingList? {
+    fun findListById(lists: List<TreeList>, id: String): TreeList? {
         for (list in lists) {
             if (list.id == id) return list
             val found = findListById(list.subLists ?: emptyList(), id)
@@ -118,11 +120,11 @@ fun ListView(
     }
 
     val currentList = findListById(allLists, listId)
-        ?: ShoppingList(id = listId, name = "Not Found", items = emptyList())
+        ?: TreeList(id = listId, name = stringResource(R.string.not_found), items = emptyList())
     val items = currentList.items?.sortedBy { it.order } ?: emptyList()
 
     var showAddItemDialog by remember { mutableStateOf(false) }
-    var itemToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
+    var itemToEdit by remember { mutableStateOf<ListItem?>(null) }
     var itemsPendingDeletion by remember { mutableStateOf<Map<String, SwipeToDismissBoxValue>>(emptyMap()) }
     val itemHeights = remember { mutableStateMapOf<String, Dp>() }
     val density = LocalDensity.current
@@ -138,17 +140,17 @@ fun ListView(
             TopAppBar(
                 title = { Text(currentList.name) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ShopperTheme.colors.topAppBarContainer,
-                    titleContentColor = ShopperTheme.colors.topAppBarTitle
+                    containerColor = LisTreeTheme.colors.topAppBarContainer,
+                    titleContentColor = LisTreeTheme.colors.topAppBarTitle
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddItemDialog = true },
-                containerColor = ShopperTheme.colors.topAppBarContainer
+                containerColor = LisTreeTheme.colors.topAppBarContainer
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add new item")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_item))
             }
         },
         modifier = modifier.fillMaxSize()
@@ -241,9 +243,9 @@ fun ListView(
 @Composable
 fun LazyItemScope.HeaderItem(
     reorderableState: ReorderableLazyListState,
-    item: ShoppingItem,
+    item: ListItem,
     density: Density,
-    onEditItem: (ShoppingItem) -> Unit,
+    onEditItem: (ListItem) -> Unit,
     viewModel: LisTreeViewModel,
     listId: String
 
@@ -260,8 +262,8 @@ fun LazyItemScope.HeaderItem(
         )
 
         Surface(
-            color = ShopperTheme.colors.sectionContainer,
-            contentColor = ShopperTheme.colors.sectionContent,
+            color = LisTreeTheme.colors.sectionContainer,
+            contentColor = LisTreeTheme.colors.sectionContent,
             shadowElevation = elevation,
             modifier = Modifier
                 .indication(interactionSource, rememberRipple())
@@ -318,7 +320,7 @@ fun LazyItemScope.HeaderItem(
                             ) {
                                 Icon(
                                     Icons.Default.MoreVert,
-                                    contentDescription = "Settings for ${item.name}"
+                                    contentDescription = stringResource(R.string.item_settings, item.name)
                                 )
                             }
                             DropdownMenu(
@@ -327,14 +329,14 @@ fun LazyItemScope.HeaderItem(
                                 offset = pressOffset
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Edit") },
+                                    text = { Text(stringResource(R.string.edit)) },
                                     onClick = {
                                         onEditItem(item)
                                         showMenu = false
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Delete") },
+                                    text = { Text(stringResource(R.string.delete)) },
                                     onClick = {
                                         viewModel.removeItem(listId, item)
                                         showMenu = false
@@ -354,7 +356,7 @@ fun LazyItemScope.HeaderItem(
                                 ) {
                                 Icon(
                                     Icons.Rounded.DragHandle,
-                                    contentDescription = "Reorder",
+                                    contentDescription = stringResource(R.string.reorder),
                                     modifier = Modifier.size(24.dp)
 
 
@@ -373,13 +375,13 @@ fun LazyItemScope.HeaderItem(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun LazyItemScope.NormalItem(
     reorderableState: ReorderableLazyListState,
-    item: ShoppingItem,
+    item: ListItem,
     swipeDirection: SwipeToDismissBoxValue?,
     density: Density,
     itemHeights: SnapshotStateMap<String, Dp>,
     viewModel: LisTreeViewModel,
     listId: String,
-    onEditItem: (ShoppingItem) -> Unit,
+    onEditItem: (ListItem) -> Unit,
     onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
     onUndoPendingDelete: () -> Unit
 ) {
@@ -459,7 +461,7 @@ private fun LazyItemScope.NormalItem(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Delete Item",
+                                contentDescription = stringResource(R.string.delete_item),
                                 tint = Color.White,
                                 modifier = Modifier.scale(scale)
                             )
@@ -468,8 +470,8 @@ private fun LazyItemScope.NormalItem(
                 ) {
                     Surface(
                         shape = CardDefaults.shape,
-                        color = ShopperTheme.colors.itemContainer,
-                        contentColor = ShopperTheme.colors.itemContent,
+                        color = LisTreeTheme.colors.itemContainer,
+                        contentColor = LisTreeTheme.colors.itemContent,
                         shadowElevation = elevation,
                         modifier = Modifier
                             .onSizeChanged { size ->
@@ -524,14 +526,14 @@ private fun LazyItemScope.NormalItem(
                                             Text(
                                                 text = item.name,
                                                 style = MaterialTheme.typography.bodyLarge,
-                                                color = if (item.isChecked) Color.Gray else ShopperTheme.colors.itemContent
+                                                color = if (item.isChecked) Color.Gray else LisTreeTheme.colors.itemContent
                                             )
                                             if (item.isChecked) {
                                                 Box(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
                                                         .height(1.dp)
-                                                        .background(ShopperTheme.colors.strikethrough)
+                                                        .background(LisTreeTheme.colors.strikethrough)
                                                 )
                                             }
                                         }
@@ -546,7 +548,7 @@ private fun LazyItemScope.NormalItem(
                                         ) {
                                             Icon(
                                                 Icons.Default.MoreVert,
-                                                contentDescription = "Settings for ${item.name}"
+                                                contentDescription = stringResource(R.string.item_settings, item.name)
                                             )
                                         }
                                         DropdownMenu(
@@ -555,14 +557,14 @@ private fun LazyItemScope.NormalItem(
                                             offset = pressOffset
                                         ) {
                                             DropdownMenuItem(
-                                                text = { Text("Edit") },
+                                                text = { Text(stringResource(R.string.edit)) },
                                                 onClick = {
                                                     onEditItem(item)
                                                     showMenu = false
                                                 }
                                             )
                                             DropdownMenuItem(
-                                                text = { Text("Delete") },
+                                                text = { Text(stringResource(R.string.delete)) },
                                                 onClick = {
                                                     viewModel.removeItem(listId, item)
                                                     showMenu = false
@@ -581,7 +583,7 @@ private fun LazyItemScope.NormalItem(
                                         ) {
                                             Icon(
                                                 Icons.Rounded.DragHandle,
-                                                contentDescription = "Reorder"
+                                                contentDescription = stringResource(R.string.reorder)
                                             )
                                         }
                                     }
@@ -607,7 +609,7 @@ private fun UndoRow(height: Dp, onUndo: () -> Unit) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("UNDO", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(stringResource(R.string.undo), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }
 
@@ -618,6 +620,7 @@ private fun AddItemDialog(
 ) {
     var itemName by rememberSaveable { mutableStateOf("") }
     var isHeader by rememberSaveable { mutableStateOf(false) }
+    val voicePrompt = stringResource(R.string.voice_prompt_add)
 
     val voiceRecognizerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -634,13 +637,13 @@ private fun AddItemDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Add New Item") },
+        title = { Text(stringResource(R.string.add_new_item_title)) },
         text = {
             Column() {
                 OutlinedTextField(
                     value = itemName,
                     onValueChange = { itemName = it },
-                    label = { Text("Item Name") },
+                    label = { Text(stringResource(R.string.item_name)) },
                     singleLine = false,
                     trailingIcon = {
                         IconButton(onClick = {
@@ -652,7 +655,7 @@ private fun AddItemDialog(
                                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "sv-SE")
                                 putExtra(
                                     RecognizerIntent.EXTRA_PROMPT,
-                                    "Prata för att lägga till en vara"
+                                    voicePrompt
                                 )
                             }
                             try {
@@ -661,13 +664,13 @@ private fun AddItemDialog(
                                 println("Voice recognition not available on this device.")
                             }
                         }) {
-                            Icon(Icons.Default.Mic, contentDescription = "Voice Input")
+                            Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.voice_input))
                         }
                     }
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isHeader, onCheckedChange = { isHeader = it })
-                    Text("Is a header")
+                    Text(stringResource(R.string.is_a_header))
                 }
             }
         },
@@ -675,21 +678,23 @@ private fun AddItemDialog(
             Button(
                 onClick = { if (itemName.isNotBlank()) onConfirm(itemName, isHeader) },
                 enabled = itemName.isNotBlank()
-            ) { Text("Add") }
+            ) { Text(stringResource(R.string.add)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
         }
     )
 }
 
 @Composable
 private fun EditItemDialog(
-    item: ShoppingItem,
+    item: ListItem,
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
     var itemName by remember { mutableStateOf(item.name) }
+    val voicePrompt = stringResource(R.string.voice_prompt_edit)
+
     val voiceRecognizerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
         onResult = { result ->
@@ -705,12 +710,12 @@ private fun EditItemDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Edit Item Name") },
+        title = { Text(stringResource(R.string.edit_item_name)) },
         text = {
             OutlinedTextField(
                 value = itemName,
                 onValueChange = { itemName = it },
-                label = { Text("Item Name") },
+                label = { Text(stringResource(R.string.item_name)) },
                 singleLine = false,
                 trailingIcon = {
                     IconButton(onClick = {
@@ -722,7 +727,7 @@ private fun EditItemDialog(
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "sv-SE")
                             putExtra(
                                 RecognizerIntent.EXTRA_PROMPT,
-                                "Prata för att ändra en vara"
+                                voicePrompt
                             )
                         }
                         try {
@@ -731,7 +736,7 @@ private fun EditItemDialog(
                             println("Voice recognition not available on this device.")
                         }
                     }) {
-                        Icon(Icons.Default.Mic, contentDescription = "Voice Input")
+                        Icon(Icons.Default.Mic, contentDescription = stringResource(R.string.voice_input))
                     }
                 }
             )
@@ -740,10 +745,10 @@ private fun EditItemDialog(
             Button(
                 onClick = { if (itemName.isNotBlank()) onConfirm(itemName) },
                 enabled = itemName.isNotBlank()
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

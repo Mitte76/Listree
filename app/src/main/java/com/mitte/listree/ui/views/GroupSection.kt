@@ -43,25 +43,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListType
-import com.mitte.listree.ui.models.ShoppingList
-import com.mitte.listree.ui.theme.ShopperTheme
+import com.mitte.listree.ui.models.TreeList
+import com.mitte.listree.ui.theme.LisTreeTheme
 import sh.calvin.reorderable.ReorderableColumn
 import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupSection(
-    list: ShoppingList,
+    list: TreeList,
     elevation: Dp,
-    onListToEdit: (ShoppingList) -> Unit,
-    onAddSubList: (ShoppingList) -> Unit,
-    onMoveItem: (ShoppingList) -> Unit,
+    onListToEdit: (TreeList) -> Unit,
+    onAddSubList: (TreeList) -> Unit,
+    onMoveItem: (TreeList) -> Unit,
     viewModel: LisTreeViewModel,
     navController: NavController,
     iconButton: @Composable () -> Unit,
@@ -73,8 +76,8 @@ fun GroupSection(
 
         Surface(
             shape = CardDefaults.shape,
-            color = ShopperTheme.colors.groupCardContainer,
-            contentColor = ShopperTheme.colors.groupCardContent,
+            color = LisTreeTheme.colors.groupCardContainer,
+            contentColor = LisTreeTheme.colors.groupCardContent,
             shadowElevation = elevation,
             modifier = Modifier
                 .indication(interactionSource, rememberRipple())
@@ -120,9 +123,9 @@ fun GroupSection(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${list.subLists?.size ?: 0} items",
+                            text = pluralStringResource(R.plurals.item_count, list.subLists?.size ?: 0, list.subLists?.size ?: 0),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = ShopperTheme.colors.listMetaCount
+                            color = LisTreeTheme.colors.listMetaCount
                         )
                     }
                     CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
@@ -131,7 +134,7 @@ fun GroupSection(
                                 IconButton(onClick = { showMenu = true }) {
                                     Icon(
                                         Icons.Default.MoreVert,
-                                        contentDescription = "Settings for ${list.name}"
+                                        contentDescription = stringResource(R.string.item_settings, list.name)
                                     )
                                 }
                                 DropdownMenu(
@@ -139,21 +142,21 @@ fun GroupSection(
                                     onDismissRequest = { showMenu = false }
                                 ) {
                                     DropdownMenuItem(
-                                        text = { Text("Edit") },
+                                        text = { Text(stringResource(R.string.edit)) },
                                         onClick = {
                                             onListToEdit(list)
                                             showMenu = false
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Move to...") },
+                                        text = { Text(stringResource(R.string.move_to)) },
                                         onClick = {
                                             onMoveItem(list)
                                             showMenu = false
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Delete") },
+                                        text = { Text(stringResource(R.string.delete)) },
                                         onClick = {
                                             viewModel.deleteList(list.id)
                                             showMenu = false
@@ -177,7 +180,7 @@ fun GroupSection(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 8.dp, start = 24.dp),
 
-                    ) { index, item, isDragging ->
+                    ) { _, item, isDragging ->
                     val elevation by animateDpAsState(
                         if (isDragging) 8.dp else 1.dp,
                         label = "elevation"
@@ -201,7 +204,7 @@ fun GroupSection(
                                         ) {
                                             Icon(
                                                 Icons.Rounded.DragHandle,
-                                                contentDescription = "Reorder"
+                                                contentDescription = stringResource(R.string.reorder)
                                             )
                                         }
                                     }
@@ -239,10 +242,10 @@ fun GroupSection(
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Add new sub-list"
+                            contentDescription = stringResource(R.string.add_new_sub_list)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add new sub-list", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.add_new_sub_list), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }

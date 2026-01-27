@@ -7,7 +7,11 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.mitte.listree.data.converters.ListTypeConverter
 
-@Database(entities = [LisTreeList::class, LisTreeItem::class, ListShare::class], version = 3, exportSchema = false)
+@Database(
+    entities = [LisTreeList::class, LisTreeItem::class, ListShare::class],
+    version = 4,
+    exportSchema = false
+)
 @TypeConverters(ListTypeConverter::class)
 abstract class LisTreeDatabase : RoomDatabase() {
 
@@ -22,12 +26,11 @@ abstract class LisTreeDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     LisTreeDatabase::class.java,
-                    "shopping_database"
-//                    "listree_database"
+                    "listree_database"
 
                 )
-                .fallbackToDestructiveMigration()
-                .build()
+                    .fallbackToDestructiveMigration(false)
+                    .build()
                 INSTANCE = instance
                 instance
             }

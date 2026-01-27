@@ -38,6 +38,11 @@ configure<ApplicationExtension> {
     buildFeatures {
         compose = true
     }
+
+    lint {
+        textReport = true
+        textOutput = file("lint-report.txt")
+    }
 }
 
 kotlin {
@@ -47,6 +52,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

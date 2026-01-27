@@ -1,7 +1,7 @@
 package com.mitte.listree.data
 
 import android.content.Context
-import com.mitte.listree.ui.models.ShoppingList as UiShoppingList
+import com.mitte.listree.ui.models.TreeList as UiShoppingList
 import kotlinx.coroutines.flow.Flow
 
 class LisTreeRepository(context: Context) {

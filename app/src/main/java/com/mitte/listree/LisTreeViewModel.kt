@@ -5,8 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mitte.listree.data.LisTreeRepository
 import com.mitte.listree.ui.models.ListType
-import com.mitte.listree.ui.models.ShoppingItem
-import com.mitte.listree.ui.models.ShoppingList
+import com.mitte.listree.ui.models.ListItem
+import com.mitte.listree.ui.models.TreeList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,8 +19,8 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository = LisTreeRepository(application)
 
-    private val _shoppingLists = MutableStateFlow<List<ShoppingList>>(emptyList())
-    val shoppingLists: StateFlow<List<ShoppingList>> = _shoppingLists.asStateFlow()
+    private val _treeLists = MutableStateFlow<List<TreeList>>(emptyList())
+    val treeLists: StateFlow<List<TreeList>> = _treeLists.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -28,7 +28,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             val allUiLists = allListsWithItems.map { dataListWithItems ->
                 val dataList = dataListWithItems.lisTreeList
                 val uiItems = dataListWithItems.items.map { dataItem ->
-                    ShoppingItem(
+                    ListItem(
                         id = dataItem.id,
                         name = dataItem.name,
                         isChecked = dataItem.isChecked,
@@ -36,7 +36,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                         order = dataItem.order
                     )
                 }
-                ShoppingList(
+                TreeList(
                     id = dataList.id,
                     name = dataList.name,
                     type = dataList.type?.let { ListType.valueOf(it.name) },
@@ -47,34 +47,34 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 )
             }
 
-            fun buildTree(parentId: String?): List<ShoppingList> {
+            fun buildTree(parentId: String?): List<TreeList> {
                 return allUiLists
                     .filter { it.parentId == parentId }
                     .sortedBy { it.order }
                     .map { it.copy(subLists = buildTree(it.id)) }
             }
 
-            _shoppingLists.value = buildTree(null)
+            _treeLists.value = buildTree(null)
         }
     }
 
     private fun saveLists() {
         viewModelScope.launch {
-            repository.saveShoppingLists(_shoppingLists.value)
+            repository.saveShoppingLists(_treeLists.value)
         }
     }
 
-    private fun getAllLists(lists: List<ShoppingList>): List<ShoppingList> {
+    private fun getAllLists(lists: List<TreeList>): List<TreeList> {
         return lists + lists.flatMap { getAllLists(it.subLists ?: emptyList()) }
     }
 
-    fun getListById(listId: String): ShoppingList? {
-        return getAllLists(shoppingLists.value).firstOrNull { it.id == listId }
+    fun getListById(listId: String): TreeList? {
+        return getAllLists(treeLists.value).firstOrNull { it.id == listId }
     }
 
     fun toggleExpanded(listId: String) {
-        _shoppingLists.update { currentLists ->
-            fun mapList(list: List<ShoppingList>): List<ShoppingList> {
+        _treeLists.update { currentLists ->
+            fun mapList(list: List<TreeList>): List<TreeList> {
                 return list.map { item ->
                     if (item.id == listId) {
                         item.copy(isExpanded = !item.isExpanded)
@@ -88,8 +88,8 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun addList(listName: String) {
-        _shoppingLists.update { currentLists ->
-            val newList = ShoppingList(
+        _treeLists.update { currentLists ->
+            val newList = TreeList(
                 id = UUID.randomUUID().toString(),
                 name = listName.trim(),
                 type = ListType.ITEM_LIST,
@@ -103,8 +103,8 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun addGroupList(listName: String) {
-        _shoppingLists.update { currentLists ->
-            val newList = ShoppingList(
+        _treeLists.update { currentLists ->
+            val newList = TreeList(
                 id = UUID.randomUUID().toString(),
                 name = listName.trim(),
                 type = ListType.GROUP_LIST,
@@ -118,10 +118,10 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun mapAndAddSubGroup(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         parentGroupId: String,
-        newSubGroup: ShoppingList
-    ): List<ShoppingList> {
+        newSubGroup: TreeList
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == parentGroupId) {
                 list.copy(subLists = ((list.subLists ?: emptyList()) + newSubGroup).sortedBy { it.order })
@@ -138,9 +138,9 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun addSubGroup(parentGroupId: String, subGroupName: String) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             val parentList = getListById(parentGroupId)
-            val newSubGroup = ShoppingList(
+            val newSubGroup = TreeList(
                 id = UUID.randomUUID().toString(),
                 name = subGroupName.trim(),
                 type = ListType.GROUP_LIST,
@@ -155,10 +155,10 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun mapAndAddSubList(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         parentGroupId: String,
-        newList: ShoppingList
-    ): List<ShoppingList> {
+        newList: TreeList
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == parentGroupId) {
                 list.copy(subLists = ((list.subLists ?: emptyList()) + newList).sortedBy { it.order })
@@ -177,9 +177,9 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun addSubList(parentGroupId: String, subListName: String) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             val parentList = getListById(parentGroupId)
-            val newList = ShoppingList(
+            val newList = TreeList(
                 id = UUID.randomUUID().toString(),
                 name = subListName.trim(),
                 type = ListType.ITEM_LIST,
@@ -194,8 +194,8 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun deleteList(listId: String) {
-        _shoppingLists.update { currentLists ->
-            fun removeRecursively(lists: List<ShoppingList>): List<ShoppingList> {
+        _treeLists.update { currentLists ->
+            fun removeRecursively(lists: List<TreeList>): List<TreeList> {
                 val filteredList = lists.filterNot { it.id == listId }
                 return filteredList.map { list ->
                     list.copy(subLists = list.subLists?.let { removeRecursively(it) })
@@ -207,10 +207,10 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun mapAndEditListName(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         listId: String,
         newName: String
-    ): List<ShoppingList> {
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
                 list.copy(name = newName.trim())
@@ -229,14 +229,14 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun editListName(listId: String, newName: String) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             mapAndEditListName(currentLists, listId, newName)
         }
         saveLists()
     }
 
     fun moveList(from: Int, to: Int) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             val mutableList = currentLists.toMutableList()
             mutableList.add(to, mutableList.removeAt(from))
             mutableList.mapIndexed { index, list -> list.copy(order = index) }.toList()
@@ -245,11 +245,11 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun mapAndMoveSubList(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         parentListId: String,
         from: Int,
         to: Int
-    ): List<ShoppingList> {
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == parentListId) {
                 val mutableSubLists = list.subLists?.toMutableList()
@@ -266,14 +266,14 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun moveSubList(parentListId: String, from: Int, to: Int) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             mapAndMoveSubList(currentLists, parentListId, from, to)
         }
         saveLists()
     }
 
     fun moveList(listId: String, newParentId: String?) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             val listToMove = getAllLists(currentLists).find { it.id == listId } ?: return@update currentLists
             val oldParentId = listToMove.parentId
 
@@ -285,7 +285,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                     .filterNot { it.id == listId }
                     .mapIndexed { index, list -> list.copy(order = index) }
             } else {
-                fun removeRecursively(lists: List<ShoppingList>): List<ShoppingList> {
+                fun removeRecursively(lists: List<TreeList>): List<TreeList> {
                     return lists.map { list ->
                         if (list.id == oldParentId) {
                             val newSubLists = list.subLists
@@ -305,7 +305,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 val newOrder = listRemovedTree.size
                 listRemovedTree + listToMove.copy(parentId = null, order = newOrder)
             } else {
-                fun addRecursively(lists: List<ShoppingList>): List<ShoppingList> {
+                fun addRecursively(lists: List<TreeList>): List<TreeList> {
                     return lists.map { list ->
                         if (list.id == newParentId) {
                             val newOrder = list.subLists?.size ?: 0
@@ -324,11 +324,11 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun mapAndMoveItem(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         listId: String,
         from: Int,
         to: Int
-    ): List<ShoppingList> {
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
                 val sortedItems = list.items?.sortedBy { it.order }
@@ -347,17 +347,17 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun moveItem(listId: String, from: Int, to: Int) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             mapAndMoveItem(currentLists, listId, from, to)
         }
         saveLists()
     }
 
     private fun mapAndToggleChecked(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         listId: String,
-        itemToToggle: ShoppingItem
-    ): List<ShoppingList> {
+        itemToToggle: ListItem
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
                 val updatedItems = list.items?.map { item ->
@@ -382,18 +382,18 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun toggleChecked(listId: String, itemToToggle: ShoppingItem) {
-        _shoppingLists.update { currentLists ->
+    fun toggleChecked(listId: String, itemToToggle: ListItem) {
+        _treeLists.update { currentLists ->
             mapAndToggleChecked(currentLists, listId, itemToToggle)
         }
         saveLists()
     }
 
     private fun mapAndAddItem(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         listId: String,
-        newItem: ShoppingItem
-    ): List<ShoppingList> {
+        newItem: ListItem
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
                 list.copy(items = ((list.items ?: emptyList()) + newItem).sortedBy { it.order })
@@ -404,10 +404,10 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun addItem(listId: String, itemName: String, isHeader: Boolean = false) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             val parentList = getListById(listId)
             val nextOrder = (parentList?.items?.map { it.order }?.maxOrNull() ?: -1) + 1
-            val newItem = ShoppingItem(
+            val newItem = ListItem(
                 id = UUID.randomUUID().toString(),
                 name = itemName.trim(),
                 isHeader = isHeader,
@@ -419,11 +419,11 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun mapAndEditItemName(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         listId: String,
         itemId: String,
         newItemName: String
-    ): List<ShoppingList> {
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
                 val updatedItems = list.items?.map { item ->
@@ -450,17 +450,17 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun editItemName(listId: String, itemId: String, newItemName: String) {
-        _shoppingLists.update { currentLists ->
+        _treeLists.update { currentLists ->
             mapAndEditItemName(currentLists, listId, itemId, newItemName)
         }
         saveLists()
     }
 
     private fun mapAndRemoveItem(
-        lists: List<ShoppingList>,
+        lists: List<TreeList>,
         listId: String,
-        itemToRemove: ShoppingItem
-    ): List<ShoppingList> {
+        itemToRemove: ListItem
+    ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
                 val updatedItems = list.items
@@ -482,8 +482,8 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun removeItem(listId: String, itemToRemove: ShoppingItem) {
-        _shoppingLists.update { currentLists ->
+    fun removeItem(listId: String, itemToRemove: ListItem) {
+        _treeLists.update { currentLists ->
             mapAndRemoveItem(currentLists, listId, itemToRemove)
         }
         saveLists()

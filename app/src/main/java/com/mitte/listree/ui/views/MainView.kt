@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,11 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -40,18 +44,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListType
-import com.mitte.listree.ui.models.ShoppingList
-import com.mitte.listree.ui.theme.ShopperTheme
+import com.mitte.listree.ui.models.TreeList
+import com.mitte.listree.ui.theme.LisTreeTheme
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -62,14 +69,14 @@ fun MainView(
     viewModel: LisTreeViewModel,
     navController: NavController
 ) {
-    val shoppingLists by viewModel.shoppingLists.collectAsState()
+    val shoppingLists by viewModel.treeLists.collectAsState()
 
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var listToEditId by rememberSaveable { mutableStateOf<String?>(null) }
     var showAddSubListDialog by rememberSaveable { mutableStateOf(false) }
     var parentGroupId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    var listToMove by rememberSaveable { mutableStateOf<ShoppingList?>(null) }
+    var listToMove by rememberSaveable { mutableStateOf<TreeList?>(null) }
     val bottomSheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
@@ -85,7 +92,7 @@ fun MainView(
         viewModel.moveList(from.index, to.index)
     }
 
-    fun getFlatShoppingListWithDepth(lists: List<ShoppingList>, depth: Int = 0): List<Pair<ShoppingList, Int>> {
+    fun getFlatShoppingListWithDepth(lists: List<TreeList>, depth: Int = 0): List<Pair<TreeList, Int>> {
         return lists.flatMap { list ->
             listOf(Pair(list, depth)) + getFlatShoppingListWithDepth(list.subLists ?: emptyList(), depth + 1)
         }
@@ -94,19 +101,42 @@ fun MainView(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Your Lists") },
+                title = { Text(stringResource(R.string.your_lists)) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ShopperTheme.colors.topAppBarContainer,
-                    titleContentColor = ShopperTheme.colors.topAppBarTitle
-                )
+                    containerColor = LisTreeTheme.colors.topAppBarContainer,
+                    titleContentColor = LisTreeTheme.colors.topAppBarTitle
+                ),
+                actions = {
+                    Box {
+                        var showMenu by remember { mutableStateOf(false) }
+                        IconButton(onClick = { showMenu = !showMenu }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.more_options)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.settings_title)) },
+                                onClick = {
+                                    showMenu = false
+                                    navController.navigate("settings")
+                                }
+                            )
+                        }
+                    }
+                }
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
-                containerColor = ShopperTheme.colors.topAppBarContainer
+                containerColor = LisTreeTheme.colors.topAppBarContainer
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add new list")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_list))
             }
         },
         modifier = Modifier.fillMaxSize()
@@ -169,7 +199,7 @@ fun MainView(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Move ${list.name} to:",
+                        stringResource(R.string.move_list_to, list.name),
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
@@ -178,7 +208,7 @@ fun MainView(
                         if (list.parentId != null) {
                             item {
                                 Text(
-                                    text = "Top level",
+                                    text = stringResource(R.string.top_level),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
@@ -279,21 +309,21 @@ fun MainView(
 
 @Composable
 private fun MoveListDialog(
-    list: ShoppingList,
-    destinations: List<ShoppingList>,
+    list: TreeList,
+    destinations: List<TreeList>,
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(
             shape = CardDefaults.shape,
-            color = ShopperTheme.colors.groupCardContainer,
-            contentColor = ShopperTheme.colors.groupCardContent,
+            color = LisTreeTheme.colors.groupCardContainer,
+            contentColor = LisTreeTheme.colors.groupCardContent,
             tonalElevation = 0.dp,
             shadowElevation = 8.dp,
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Move ${list.name} to:", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.move_list_to, list.name), style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(16.dp))
                 LazyColumn {
                     items(destinations) { destination ->
@@ -320,18 +350,18 @@ private fun AddListDialog(
     var isGroup by rememberSaveable { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Create New List") },
+        title = { Text(stringResource(R.string.create_new_list)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = listName,
                     onValueChange = { listName = it },
-                    label = { Text("List Name") },
+                    label = { Text(stringResource(R.string.list_name)) },
                     singleLine = true
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isGroup, onCheckedChange = { isGroup = it })
-                    Text("Is a group")
+                    Text(stringResource(R.string.is_a_group))
                 }
             }
         },
@@ -340,11 +370,11 @@ private fun AddListDialog(
                 onClick = { if (listName.isNotBlank()) onConfirm(listName, isGroup) },
                 enabled = listName.isNotBlank()
             ) {
-                Text("Create")
+                Text(stringResource(R.string.create))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
         }
     )
 }
@@ -359,18 +389,18 @@ private fun AddSubListDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Create New Sub-List") },
+        title = { Text(stringResource(R.string.create_new_sub_list)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = listName,
                     onValueChange = { listName = it },
-                    label = { Text("List Name") },
+                    label = { Text(stringResource(R.string.list_name)) },
                     singleLine = true
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isGroup, onCheckedChange = { isGroup = it })
-                    Text("Is a group")
+                    Text(stringResource(R.string.is_a_group))
                 }
             }
         },
@@ -379,18 +409,18 @@ private fun AddSubListDialog(
                 onClick = { if (listName.isNotBlank()) onConfirm(listName, isGroup) },
                 enabled = listName.isNotBlank()
             ) {
-                Text("Create")
+                Text(stringResource(R.string.create))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
         }
     )
 }
 
 @Composable
 private fun EditListDialog(
-    list: ShoppingList,
+    list: TreeList,
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
@@ -398,12 +428,12 @@ private fun EditListDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Edit List Name") },
+        title = { Text(stringResource(R.string.edit_list_name)) },
         text = {
             OutlinedTextField(
                 value = listName,
                 onValueChange = { listName = it },
-                label = { Text("List Name") },
+                label = { Text(stringResource(R.string.list_name)) },
                 singleLine = true
             )
         },
@@ -412,11 +442,11 @@ private fun EditListDialog(
                 onClick = { if (listName.isNotBlank()) onConfirm(listName) },
                 enabled = listName.isNotBlank()
             ) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("Cancel") }
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

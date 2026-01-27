@@ -13,7 +13,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 
-private val LocalShopperColors = staticCompositionLocalOf { LightShopperColors }
+private val LocalLisTreeColors = staticCompositionLocalOf { LightLisTreeColors }
 
 @Composable
 fun LisTreeTheme(
@@ -31,9 +31,9 @@ fun LisTreeTheme(
         else -> lightColorScheme()
     }
 
-    val customColors = if (darkTheme) DarkShopperColors else LightShopperColors
+    val customColors = if (darkTheme) DarkLisTreeColors else LightLisTreeColors
 
-    CompositionLocalProvider(LocalShopperColors provides customColors) {
+    CompositionLocalProvider(LocalLisTreeColors provides customColors) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,
@@ -42,9 +42,9 @@ fun LisTreeTheme(
     }
 }
 
-object ShopperTheme {
-    val colors: ShopperColors
+object LisTreeTheme {
+    val colors: LisTreeColors
         @Composable
         @ReadOnlyComposable
-        get() = LocalShopperColors.current
+        get() = LocalLisTreeColors.current
 }

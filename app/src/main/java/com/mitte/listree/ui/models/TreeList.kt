@@ -5,12 +5,12 @@ enum class ListType {
     GROUP_LIST
 }
 
-data class ShoppingList(
+data class TreeList(
     val id: String,
     val name: String,
     val type: ListType? = ListType.ITEM_LIST,
-    val items: List<ShoppingItem>? = emptyList(),
-    val subLists: List<ShoppingList>? = emptyList(),
+    val items: List<ListItem>? = emptyList(),
+    val subLists: List<TreeList>? = emptyList(),
     val isExpanded: Boolean = false,
     val parentId: String? = null,
     val order: Int = 0
