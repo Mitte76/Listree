@@ -9,7 +9,7 @@ plugins {
 
 configure<ApplicationExtension> {
     namespace = "com.mitte.listree"
-    compileSdk = 36 // Note: compileSdk is now a direct property
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.mitte.listree"
