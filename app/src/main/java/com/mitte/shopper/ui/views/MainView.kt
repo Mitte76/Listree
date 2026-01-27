@@ -3,6 +3,7 @@ package com.mitte.shopper.ui.views
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -85,10 +86,6 @@ fun MainView(
         viewModel.moveList(from.index, to.index)
     }
 
-    fun getAllLists(lists: List<ShoppingList>): List<ShoppingList> {
-        return lists + lists.flatMap { getAllLists(it.subLists ?: emptyList()) }
-    }
-
     fun getFlatShoppingListWithDepth(lists: List<ShoppingList>, depth: Int = 0): List<Pair<ShoppingList, Int>> {
         return lists.flatMap { list ->
             listOf(Pair(list, depth)) + getFlatShoppingListWithDepth(list.subLists ?: emptyList(), depth + 1)
@@ -155,14 +152,11 @@ fun MainView(
                         onConfirm = { subListName, isGroup ->
                             if (isGroup) {
                                 viewModel.addSubGroup(id, subListName)
-                                showAddSubListDialog = false
-                                parentGroupId = null
                             } else {
                                 viewModel.addSubList(id, subListName)
-                                showAddSubListDialog = false
-                                parentGroupId = null
                             }
-
+                            showAddSubListDialog = false
+                            parentGroupId = null
                         }
                     )
                 }
@@ -170,7 +164,6 @@ fun MainView(
         }
 
         listToMove?.let { list ->
-
             ModalBottomSheet(
                 onDismissRequest = { listToMove = null },
                 sheetState = bottomSheetState
@@ -182,6 +175,25 @@ fun MainView(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     LazyColumn {
+                        // Option to move to top-level, only if it's not already there.
+                        if (list.parentId != null) {
+                            item {
+                                Text(
+                                    text = "Top level",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.moveList(
+                                                listId = list.id,
+                                                newParentId = null
+                                            )
+                                            closeMoveSheet()
+                                        }
+                                        .padding(vertical = 12.dp)
+                                )
+                            }
+                        }
+
                         val destinations = getFlatShoppingListWithDepth(shoppingLists).filter { (it, _) ->
                             it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id
                         }
@@ -192,16 +204,13 @@ fun MainView(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        list.parentId?.let { parentId ->
-                                            viewModel.moveSubListToNewGroup(
-                                                list.id,
-                                                parentId,
-                                                destination.id
-                                            )
-                                        }
+                                        viewModel.moveList(
+                                            listId = list.id,
+                                            newParentId = destination.id
+                                        )
                                         closeMoveSheet()
                                     }
-                                    .padding(start = (16 * depth).dp, end = 16.dp)
+                                    .padding(start = (16 * depth).dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
                             )
                         }
                     }
@@ -230,7 +239,6 @@ fun MainView(
                             elevation = elevation,
                             onListToEdit = { listToEditId = it.id },
                             onAddSubList = {
-                                println("Kamelsnopp ${it.id}")
                                 parentGroupId = it.id
                                 showAddSubListDialog = true
                             },
@@ -240,7 +248,10 @@ fun MainView(
 
                             iconButton = {
                                 IconButton(
-                                    modifier = Modifier.draggableHandle().height(30.dp).width(30.dp),
+                                    modifier = Modifier
+                                        .draggableHandle()
+                                        .height(30.dp)
+                                        .width(30.dp),
                                     onClick = {},
                                 ) {
                                     Icon(
@@ -384,7 +395,8 @@ private fun EditListDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    var listName by rememberSaveable { mutableStateOf(list.name) }
+    var listName by rememberSaveable(list) { mutableStateOf(list.name) }
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Edit List Name") },

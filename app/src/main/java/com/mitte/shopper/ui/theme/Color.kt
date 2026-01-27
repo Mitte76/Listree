@@ -14,9 +14,11 @@ data class ShopperColors(
     val singleCardContent: Color,
     val itemContainer: Color,
     val itemContent: Color,
+    val listItemContainer: Color,
     val sectionContainer: Color,
     val sectionContent: Color,
-    val strikethrough: Color
+    val strikethrough: Color,
+    val deleteAction: Color
 )
 
 val LightShopperColors = ShopperColors(
@@ -29,9 +31,11 @@ val LightShopperColors = ShopperColors(
     singleCardContent = Color(0xFF212121),
     itemContainer = Color(0xFFEEEEEE),
     itemContent = Color(0xFF212121),
+    listItemContainer = Color(0xFFEEEEEE),
     sectionContainer = Color(0xFF212121),
     sectionContent = Color(0xFF212121),
-    strikethrough = Color(0xFFAA5A64)
+    strikethrough = Color(0xFFAA5A64),
+    deleteAction = Color(0xFFAA5A64)
 )
 
 val DarkShopperColors = ShopperColors(
@@ -44,7 +48,9 @@ val DarkShopperColors = ShopperColors(
     singleCardContent = Color(0xFFDCE4EC),
     itemContainer = Color(0xFF525252),
     itemContent = Color(0xFFDCE4EC),
+    listItemContainer = Color(0xFF525252),
     sectionContainer = Color(0xFF462801),
     sectionContent = Color(0xFFEEEEEE),
-    strikethrough = Color(0xFFF44336)
+    strikethrough = Color(0xFFF44336),
+    deleteAction = Color(0xFFF44336)
 )

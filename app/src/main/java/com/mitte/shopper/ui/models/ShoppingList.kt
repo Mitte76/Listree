@@ -12,5 +12,6 @@ data class ShoppingList(
     val items: List<ShoppingItem>? = emptyList(),
     val subLists: List<ShoppingList>? = emptyList(),
     val isExpanded: Boolean = false,
-    val parentId: String? = null
+    val parentId: String? = null,
+    val order: Int = 0
 )

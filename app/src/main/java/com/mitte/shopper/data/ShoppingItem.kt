@@ -23,5 +23,6 @@ data class ShoppingItem(
     val name: String,
     var isChecked: Boolean = false,
     var isHeader: Boolean = false,
-    val lastModified: Long = System.currentTimeMillis()
+    val lastModified: Long = System.currentTimeMillis(),
+    val order: Int = 0
 )

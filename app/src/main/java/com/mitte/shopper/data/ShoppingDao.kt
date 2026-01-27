@@ -5,23 +5,26 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ShoppingDao {
 
-    @Query("SELECT * FROM shopping_lists WHERE parentId IS NULL")
-    fun getShoppingLists(): Flow<List<ShoppingList>>
+    @Transaction
+    @Query("SELECT * FROM shopping_lists ORDER BY `order` ASC")
+    fun getShoppingListsWithItems(): Flow<List<ShoppingListWithItems>>
 
-    @Query("SELECT * FROM shopping_lists WHERE parentId = :listId")
+    @Query("SELECT * FROM shopping_lists WHERE parentId = :listId ORDER BY `order` ASC")
     fun getSubLists(listId: String): Flow<List<ShoppingList>>
 
-    @Query("SELECT * FROM shopping_items WHERE listId = :listId")
+    @Query("SELECT * FROM shopping_items WHERE listId = :listId ORDER BY `order` ASC")
     fun getShoppingItems(listId: String): Flow<List<ShoppingItem>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertShoppingList(list: ShoppingList)
+    @Upsert
+    suspend fun upsertShoppingList(list: ShoppingList)
 
     @Update
     suspend fun updateShoppingList(list: ShoppingList)
@@ -32,8 +35,8 @@ interface ShoppingDao {
     @Query("DELETE FROM shopping_lists")
     suspend fun deleteAllShoppingLists()
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertShoppingItem(item: ShoppingItem)
+    @Upsert
+    suspend fun upsertShoppingItem(item: ShoppingItem)
 
     @Update
     suspend fun updateShoppingItem(item: ShoppingItem)

@@ -4,5 +4,6 @@ data class ShoppingItem(
     val id: String,
     val name: String,
     val isChecked: Boolean = false,
-    val isHeader: Boolean = false
+    val isHeader: Boolean = false,
+    val order: Int = 0
 )

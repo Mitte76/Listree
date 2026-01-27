@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.mitte.shopper.data.converters.ListTypeConverter
 
-@Database(entities = [ShoppingList::class, ShoppingItem::class, ListShare::class], version = 2, exportSchema = false)
+@Database(entities = [ShoppingList::class, ShoppingItem::class, ListShare::class], version = 3, exportSchema = false)
 @TypeConverters(ListTypeConverter::class)
 abstract class ShoppingDatabase : RoomDatabase() {
 

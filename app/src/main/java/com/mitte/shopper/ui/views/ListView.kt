@@ -107,10 +107,19 @@ fun ListView(
     listId: String
 ) {
     val allLists by viewModel.shoppingLists.collectAsState()
-    val currentList = allLists.firstOrNull { it.id == listId }
-        ?: allLists.flatMap { it.subLists ?: emptyList() }.firstOrNull { it.id == listId }
+
+    fun findListById(lists: List<ShoppingList>, id: String): ShoppingList? {
+        for (list in lists) {
+            if (list.id == id) return list
+            val found = findListById(list.subLists ?: emptyList(), id)
+            if (found != null) return found
+        }
+        return null
+    }
+
+    val currentList = findListById(allLists, listId)
         ?: ShoppingList(id = listId, name = "Not Found", items = emptyList())
-    val items = currentList.items ?: emptyList()
+    val items = currentList.items?.sortedBy { it.order } ?: emptyList()
 
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
@@ -120,6 +129,7 @@ fun ListView(
     val lazyListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        println("from.index: ${from.index}, to.index: ${to.index}")
         viewModel.moveItem(listId, from.index, to.index)
     }
 

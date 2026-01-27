@@ -1,7 +1,9 @@
 package com.mitte.shopper.data
 
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.Relation
 import java.util.UUID
 
 enum class ListType {
@@ -17,5 +19,15 @@ data class ShoppingList(
     val name: String,
     val type: ListType? = ListType.ITEM_LIST,
     val parentId: String? = null,
-    val lastModified: Long = System.currentTimeMillis()
+    val lastModified: Long = System.currentTimeMillis(),
+    val order: Int = 0
+)
+
+data class ShoppingListWithItems(
+    @Embedded val shoppingList: ShoppingList,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "listId"
+    )
+    val items: List<ShoppingItem>
 )
