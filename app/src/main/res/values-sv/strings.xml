@@ -65,4 +65,6 @@
     <string name="ok">OK</string>
     <string name="save">Spara</string>
     <string name="voice_input">Röstinmatning</string>
+    <string name="restore_list">Återställ %1$s</string>
+    <string name="restore_item">Återställ item</string>
 </resources>

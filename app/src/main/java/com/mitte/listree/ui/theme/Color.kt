@@ -55,5 +55,5 @@ val DarkLisTreeColors = LisTreeColors(
     sectionContent = Color(0xFFEEEEEE),
     strikethrough = Color(0xFFF44336),
     deleteAction = Color(0xFFF44336),
-    deletedCardContainer = Color(0xFF424242)
+    deletedCardContainer = Color(0xFFE91E63)
 )

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -69,7 +71,7 @@ fun SingleSection(
         shadowElevation = elevation,
         modifier = Modifier
             .indication(interactionSource, ripple())
-            .pointerInput(Unit) {
+            .pointerInput(list.deleted) {
                 detectTapGestures(
                     onPress = { offset ->
                         val press = PressInteraction.Press(offset)
@@ -81,11 +83,11 @@ fun SingleSection(
                             interactionSource.emit(PressInteraction.Cancel(press))
                         }
                     },
-                    onTap = { onTap() }
+                    onTap = { if (!list.deleted) onTap() }
                 )
             },
     ) {
-        Box {
+        Box(modifier = Modifier.alpha(if (list.deleted) 0.6f else 1f)) {
             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -113,53 +115,62 @@ fun SingleSection(
                             color = LisTreeTheme.colors.listMetaCount
                         )
                     }
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
+                    if (list.deleted) {
+                        IconButton(onClick = { viewModel.undeleteList(list.id) }) {
                             Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = stringResource(
-                                    R.string.item_settings,
-                                    list.name
+                                Icons.Default.Restore,
+                                contentDescription = stringResource(R.string.restore_list, list.name)
+                            )
+                        }
+                    } else {
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = stringResource(
+                                        R.string.item_settings,
+                                        list.name
+                                    )
                                 )
-                            )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.edit)) },
+                                    onClick = {
+                                        onListToEdit(list)
+                                        showMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.move_to)) },
+                                    onClick = {
+                                        onMoveItem(list)
+                                        showMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.delete)) },
+                                    onClick = {
+                                        viewModel.deleteList(list.id)
+                                        showMenu = false
+                                    }
+                                )
+                            }
                         }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
+                        IconButton(
+                            modifier = modifier
+                                .height(30.dp)
+                                .width(30.dp),
+                            onClick = {},
                         ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.edit)) },
-                                onClick = {
-                                    onListToEdit(list)
-                                    showMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.move_to)) },
-                                onClick = {
-                                    onMoveItem(list)
-                                    showMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.delete)) },
-                                onClick = {
-                                    viewModel.deleteList(list.id)
-                                    showMenu = false
-                                }
+                            Icon(
+                                Icons.Rounded.DragHandle,
+                                contentDescription = stringResource(R.string.reorder)
                             )
                         }
-                    }
-                    IconButton(
-                        modifier = modifier
-                            .height(30.dp)
-                            .width(30.dp),
-                        onClick = {},
-                    ) {
-                        Icon(
-                            Icons.Rounded.DragHandle,
-                            contentDescription = stringResource(R.string.reorder)
-                        )
                     }
                 }
             }

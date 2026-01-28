@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -78,6 +79,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -125,7 +127,8 @@ fun ListView(
 
     val currentList = findListById(allLists, listId)
         ?: TreeList(id = listId, name = stringResource(R.string.not_found), items = emptyList())
-    val items = currentList.items?.filter { !it.deleted || showDeleted }?.sortedBy { it.order } ?: emptyList()
+    val items = currentList.items?.filter { !it.deleted || showDeleted }?.sortedBy { it.order }
+        ?: emptyList()
 
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ListItem?>(null) }
@@ -277,6 +280,7 @@ fun LazyItemScope.HeaderItem(
             contentColor = LisTreeTheme.colors.sectionContent,
             shadowElevation = elevation,
             modifier = Modifier
+                .alpha(if (item.deleted) 0.6f else 1f)
                 .indication(interactionSource, ripple())
                 .pointerInput(Unit) {
                     detectTapGestures(
@@ -322,59 +326,71 @@ fun LazyItemScope.HeaderItem(
                                 .weight(1f)
                                 .padding(horizontal = 8.dp)
                         )
-                        Box {
-                            IconButton(
-                                onClick = { showMenu = true },
-                                modifier = Modifier
-                                    .height(30.dp)
-                                    .width(30.dp),
-                            ) {
+                        if (item.deleted) {
+                            IconButton(onClick = { viewModel.undeleteItem(listId, item) }) {
                                 Icon(
-                                    Icons.Default.MoreVert,
+                                    Icons.Default.Restore,
                                     contentDescription = stringResource(
-                                        R.string.item_settings,
+                                        R.string.restore_item,
                                         item.name
                                     )
                                 )
                             }
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false },
-                                offset = pressOffset
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.edit)) },
-                                    onClick = {
-                                        onEditItem(item)
-                                        showMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.delete)) },
-                                    onClick = {
-                                        viewModel.removeItem(listId, item)
-                                        showMenu = false
-                                    }
-                                )
-                            }
-                        }
-
-                        Box(modifier = Modifier.padding(end = 8.dp)) {
-                            IconButton(
-                                modifier = Modifier
-                                    .draggableHandle()
-                                    .height(30.dp)
-                                    .width(30.dp),
-                                onClick = {},
-
+                        } else {
+                            Box {
+                                IconButton(
+                                    onClick = { showMenu = true },
+                                    modifier = Modifier
+                                        .height(30.dp)
+                                        .width(30.dp),
                                 ) {
-                                Icon(
-                                    Icons.Rounded.DragHandle,
-                                    contentDescription = stringResource(R.string.reorder),
-                                    modifier = Modifier.size(24.dp)
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = stringResource(
+                                            R.string.item_settings,
+                                            item.name
+                                        )
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = showMenu,
+                                    onDismissRequest = { showMenu = false },
+                                    offset = pressOffset
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.edit)) },
+                                        onClick = {
+                                            onEditItem(item)
+                                            showMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.delete)) },
+                                        onClick = {
+                                            viewModel.removeItem(listId, item)
+                                            showMenu = false
+                                        }
+                                    )
+                                }
+                            }
+
+                            Box(modifier = Modifier.padding(end = 8.dp)) {
+                                IconButton(
+                                    modifier = Modifier
+                                        .draggableHandle()
+                                        .height(30.dp)
+                                        .width(30.dp),
+                                    onClick = {},
+
+                                    ) {
+                                    Icon(
+                                        Icons.Rounded.DragHandle,
+                                        contentDescription = stringResource(R.string.reorder),
+                                        modifier = Modifier.size(24.dp)
 
 
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -438,7 +454,8 @@ private fun LazyItemScope.NormalItem(
                     )
                 }
             } else {
-                val dismissState = rememberSwipeToDismissBoxState(positionalThreshold = { distance -> distance * 0.5f })
+                val dismissState =
+                    rememberSwipeToDismissBoxState(positionalThreshold = { distance -> distance * 0.5f })
 
                 SwipeToDismissBox(
                     state = dismissState,
@@ -457,37 +474,39 @@ private fun LazyItemScope.NormalItem(
                             }
                         }
                     },
-                    enableDismissFromStartToEnd = true,
-                    enableDismissFromEndToStart = true,
+                    enableDismissFromStartToEnd = !item.deleted,
+                    enableDismissFromEndToStart = !item.deleted,
                     backgroundContent = {
-                        val color by animateColorAsState(
-                            targetValue = when (dismissState.dismissDirection) {
-                                SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> Color.Red.copy(
-                                    alpha = 0.8f
-                                )
+                        if (!item.deleted) {
+                            val color by animateColorAsState(
+                                targetValue = when (dismissState.dismissDirection) {
+                                    SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> Color.Red.copy(
+                                        alpha = 0.8f
+                                    )
 
-                                else -> Color.Transparent
-                            }, label = "background color"
-                        )
-                        val scale by animateFloatAsState(
-                            targetValue = if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
-                            label = "icon scale"
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CardDefaults.shape)
-                                .background(color)
-                                .padding(horizontal = 20.dp),
-                            contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
-                        ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.delete_item),
-                                tint = Color.White,
-                                modifier = Modifier.scale(scale)
+                                    else -> Color.Transparent
+                                }, label = "background color"
                             )
+                            val scale by animateFloatAsState(
+                                targetValue = if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
+                                label = "icon scale"
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CardDefaults.shape)
+                                    .background(color)
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = stringResource(R.string.delete_item),
+                                    tint = Color.White,
+                                    modifier = Modifier.scale(scale)
+                                )
+                            }
                         }
                     }
                 ) {
@@ -497,13 +516,14 @@ private fun LazyItemScope.NormalItem(
                         contentColor = LisTreeTheme.colors.itemContent,
                         shadowElevation = elevation,
                         modifier = Modifier
+                            .alpha(if (item.deleted) 0.6f else 1f)
                             .onSizeChanged { size ->
                                 with(density) {
                                     itemHeights[item.id] = size.height.toDp()
                                 }
                             }
                             .indication(interactionSource, ripple())
-                            .pointerInput(Unit) {
+                            .pointerInput(item.deleted) {
                                 detectTapGestures(
                                     onPress = { offset ->
                                         val press = PressInteraction.Press(offset)
@@ -519,7 +539,10 @@ private fun LazyItemScope.NormalItem(
                                             interactionSource.emit(PressInteraction.Cancel(press))
                                         }
                                     },
-                                    onTap = { viewModel.toggleChecked(listId, item) },
+                                    onTap = {
+                                        println("item.deleted: ${item.deleted}")
+                                        if (!item.deleted) viewModel.toggleChecked(listId, item)
+                                    },
                                     onLongPress = { offset ->
                                         showMenu = true
                                         pressOffset = with(density) {
@@ -561,56 +584,75 @@ private fun LazyItemScope.NormalItem(
                                             }
                                         }
                                     }
+                                    if (item.deleted) {
+                                        Box(modifier = Modifier.padding(end = 8.dp)) {
 
-                                    Box {
-                                        IconButton(
-                                            onClick = { showMenu = true },
-                                            modifier = Modifier
-                                                .height(30.dp)
-                                                .width(30.dp),
-                                        ) {
-                                            Icon(
-                                                Icons.Default.MoreVert,
-                                                contentDescription = stringResource(
-                                                    R.string.item_settings,
-                                                    item.name
+                                            IconButton(
+                                                onClick = { viewModel.undeleteItem(listId, item) },
+                                                modifier = Modifier
+                                                    .height(30.dp)
+                                                    .width(30.dp),
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Restore,
+                                                    contentDescription = stringResource(
+                                                        R.string.restore_item,
+                                                        item.name
+                                                    )
                                                 )
-                                            )
+                                            }
                                         }
-                                        DropdownMenu(
-                                            expanded = showMenu,
-                                            onDismissRequest = { showMenu = false },
-                                            offset = pressOffset
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.edit)) },
-                                                onClick = {
-                                                    onEditItem(item)
-                                                    showMenu = false
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.delete)) },
-                                                onClick = {
-                                                    viewModel.removeItem(listId, item)
-                                                    showMenu = false
-                                                }
-                                            )
+                                    } else {
+                                        Box {
+                                            IconButton(
+                                                onClick = { showMenu = true },
+                                                modifier = Modifier
+                                                    .height(30.dp)
+                                                    .width(30.dp),
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.MoreVert,
+                                                    contentDescription = stringResource(
+                                                        R.string.item_settings,
+                                                        item.name
+                                                    )
+                                                )
+                                            }
+                                            DropdownMenu(
+                                                expanded = showMenu,
+                                                onDismissRequest = { showMenu = false },
+                                                offset = pressOffset
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.edit)) },
+                                                    onClick = {
+                                                        onEditItem(item)
+                                                        showMenu = false
+                                                    }
+                                                )
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.delete)) },
+                                                    onClick = {
+                                                        viewModel.removeItem(listId, item)
+                                                        showMenu = false
+                                                    }
+                                                )
+                                            }
                                         }
-                                    }
-                                    Box(modifier = Modifier.padding(end = 8.dp)) {
+                                        Box(modifier = Modifier.padding(end = 8.dp)) {
 
-                                        IconButton(
-                                            modifier = Modifier
-                                                .draggableHandle()
-                                                .height(30.dp)
-                                                .width(30.dp),
-                                            onClick = {},
-                                        ) {
-                                            Icon(
-                                                Icons.Rounded.DragHandle,
-                                                contentDescription = stringResource(R.string.reorder)
-                                            )
+                                            IconButton(
+                                                modifier = Modifier
+                                                    .draggableHandle()
+                                                    .height(30.dp)
+                                                    .width(30.dp),
+                                                onClick = {},
+                                            ) {
+                                                Icon(
+                                                    Icons.Rounded.DragHandle,
+                                                    contentDescription = stringResource(R.string.reorder)
+                                                )
+                                            }
                                         }
                                     }
                                 }

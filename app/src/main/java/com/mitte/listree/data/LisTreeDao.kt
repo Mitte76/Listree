@@ -47,6 +47,12 @@ interface LisTreeDao {
     @Query("UPDATE shopping_items SET deleted = 1, lastModified = :timestamp WHERE id = :itemId")
     suspend fun removeItem(itemId: String, timestamp: Long)
 
+    @Query("UPDATE shopping_lists SET deleted = 0, lastModified = :timestamp WHERE id = :listId")
+    suspend fun undeleteList(listId: String, timestamp: Long)
+
+    @Query("UPDATE shopping_items SET deleted = 0, lastModified = :timestamp WHERE id = :itemId")
+    suspend fun undeleteItem(itemId: String, timestamp: Long)
+
     @Query("DELETE FROM shopping_items")
     suspend fun deleteAllShoppingItems()
 

@@ -65,4 +65,6 @@
     <string name="ok">OK</string>
     <string name="save">Save</string>
     <string name="voice_input">Voice Input</string>
+    <string name="restore_list">Restore %1$s</string>
+    <string name="restore_item">Restore item</string>
 </resources>

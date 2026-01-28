@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.mitte.listree.data.LisTreeRepository
+import com.mitte.listree.data.PreferencesManager
 import com.mitte.listree.ui.models.ListItem
 import com.mitte.listree.ui.models.ListType
 import com.mitte.listree.ui.models.TreeList
@@ -31,11 +32,12 @@ import java.util.UUID
 class LisTreeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = LisTreeRepository(application)
+    private val preferencesManager = PreferencesManager(application)
 
     private val _treeLists = MutableStateFlow<List<TreeList>>(emptyList())
     val treeLists: StateFlow<List<TreeList>> = _treeLists.asStateFlow()
 
-    private val _showDeleted = MutableStateFlow(false)
+    private val _showDeleted = MutableStateFlow(preferencesManager.getShowDeleted())
     val showDeleted: StateFlow<Boolean> = _showDeleted.asStateFlow()
 
     init {
@@ -43,6 +45,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setShowDeleted(show: Boolean) {
+        preferencesManager.setShowDeleted(show)
         _showDeleted.value = show
         loadLists() // Reload to apply filter
     }
@@ -381,6 +384,23 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         saveLists()
     }
 
+    private fun mapAndUndeleteList(lists: List<TreeList>, listId: String): List<TreeList> {
+        return lists.map { list ->
+            if (list.id == listId) {
+                list.copy(deleted = false, lastModified = System.currentTimeMillis())
+            } else {
+                list.copy(subLists = list.subLists?.let { mapAndUndeleteList(it, listId) })
+            }
+        }
+    }
+
+    fun undeleteList(listId: String) {
+        _treeLists.update { currentLists ->
+            mapAndUndeleteList(currentLists, listId)
+        }
+        saveLists()
+    }
+
     private fun mapAndEditListName(
         lists: List<TreeList>,
         listId: String,
@@ -659,4 +679,37 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         saveLists()
     }
 
+    private fun mapAndUndeleteItem(
+        lists: List<TreeList>,
+        listId: String,
+        itemToUndelete: ListItem
+    ): List<TreeList> {
+        return lists.map { list ->
+            if (list.id == listId) {
+                val updatedItems = list.items?.map { item ->
+                    if (item.id == itemToUndelete.id) {
+                        item.copy(deleted = false, lastModified = System.currentTimeMillis())
+                    } else {
+                        item
+                    }
+                }
+                list.copy(items = updatedItems, lastModified = System.currentTimeMillis())
+            } else {
+                list.copy(subLists = list.subLists?.let {
+                    mapAndUndeleteItem(
+                        it,
+                        listId,
+                        itemToUndelete
+                    )
+                })
+            }
+        }
+    }
+
+    fun undeleteItem(listId: String, itemToUndelete: ListItem) {
+        _treeLists.update { currentLists ->
+            mapAndUndeleteItem(currentLists, listId, itemToUndelete)
+        }
+        saveLists()
+    }
 }
