@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -94,6 +95,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.mitte.listree.LisTreeViewModel
 import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListItem
@@ -111,7 +113,8 @@ import kotlin.coroutines.cancellation.CancellationException
 fun ListView(
     modifier: Modifier = Modifier,
     viewModel: LisTreeViewModel,
-    listId: String
+    listId: String,
+    navController: NavController
 ) {
     val allLists by viewModel.treeLists.collectAsState()
     val showDeleted by viewModel.showDeleted.collectAsState()
@@ -153,7 +156,15 @@ fun ListView(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = LisTreeTheme.colors.topAppBarContainer,
                     titleContentColor = LisTreeTheme.colors.topAppBarTitle
-                )
+                ),
+                actions = {
+                    IconButton(onClick = { navController.navigate("settings") }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings_title)
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -277,12 +288,12 @@ fun LazyItemScope.HeaderItem(
 
         Surface(
             color = if (item.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.sectionContainer,
-            contentColor = LisTreeTheme.colors.sectionContent,
+            contentColor = if (item.deleted) LisTreeTheme.colors.deletedCardContent else LisTreeTheme.colors.sectionContent,
             shadowElevation = elevation,
             modifier = Modifier
                 .alpha(if (item.deleted) 0.6f else 1f)
                 .indication(interactionSource, ripple())
-                .pointerInput(Unit) {
+                .pointerInput(item.deleted) {
                     detectTapGestures(
                         onPress = { offset ->
                             val press = PressInteraction.Press(offset)
@@ -330,10 +341,7 @@ fun LazyItemScope.HeaderItem(
                             IconButton(onClick = { viewModel.undeleteItem(listId, item) }) {
                                 Icon(
                                     Icons.Default.Restore,
-                                    contentDescription = stringResource(
-                                        R.string.restore_item,
-                                        item.name
-                                    )
+                                    contentDescription = stringResource(R.string.restore_item, item.name)
                                 )
                             }
                         } else {
@@ -513,7 +521,7 @@ private fun LazyItemScope.NormalItem(
                     Surface(
                         shape = CardDefaults.shape,
                         color = if (item.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.itemContainer,
-                        contentColor = LisTreeTheme.colors.itemContent,
+                        contentColor = if (item.deleted) LisTreeTheme.colors.deletedCardContent else LisTreeTheme.colors.itemContent,
                         shadowElevation = elevation,
                         modifier = Modifier
                             .alpha(if (item.deleted) 0.6f else 1f)
@@ -540,16 +548,17 @@ private fun LazyItemScope.NormalItem(
                                         }
                                     },
                                     onTap = {
-                                        println("item.deleted: ${item.deleted}")
                                         if (!item.deleted) viewModel.toggleChecked(listId, item)
                                     },
                                     onLongPress = { offset ->
-                                        showMenu = true
-                                        pressOffset = with(density) {
-                                            DpOffset(
-                                                offset.x.toDp(),
-                                                offset.y.toDp()
-                                            )
+                                        if (!item.deleted) {
+                                            showMenu = true
+                                            pressOffset = with(density) {
+                                                DpOffset(
+                                                    offset.x.toDp(),
+                                                    offset.y.toDp()
+                                                )
+                                            }
                                         }
                                     }
                                 )
@@ -572,7 +581,7 @@ private fun LazyItemScope.NormalItem(
                                             Text(
                                                 text = item.name,
                                                 style = MaterialTheme.typography.bodyLarge,
-                                                color = if (item.isChecked || item.deleted) Color.Gray else LisTreeTheme.colors.itemContent
+                                                color = if (item.deleted) LisTreeTheme.colors.deletedCardContent else if (item.isChecked) LisTreeTheme.colors.checkedItemContent else LisTreeTheme.colors.itemContent
                                             )
                                             if (item.isChecked && !item.deleted) {
                                                 Box(
@@ -672,7 +681,7 @@ private fun UndoRow(height: Dp, onUndo: () -> Unit) {
             .fillMaxWidth()
             .height(height)
             .clip(CardDefaults.shape)
-            .background(Color.Red.copy(alpha = 0.8f))
+            .background(LisTreeTheme.colors.undoRowBackground)
             .clickable(onClick = onUndo),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
@@ -681,7 +690,7 @@ private fun UndoRow(height: Dp, onUndo: () -> Unit) {
             stringResource(R.string.undo),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = LisTreeTheme.colors.undoRowContent
         )
     }
 }

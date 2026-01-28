@@ -19,7 +19,11 @@ data class LisTreeColors(
     val sectionContent: Color,
     val strikethrough: Color,
     val deleteAction: Color,
-    val deletedCardContainer: Color
+    val deletedCardContainer: Color,
+    val deletedCardContent: Color,
+    val checkedItemContent: Color,
+    val undoRowContent: Color,
+    val undoRowBackground: Color
 )
 
 val LightLisTreeColors = LisTreeColors(
@@ -37,7 +41,11 @@ val LightLisTreeColors = LisTreeColors(
     sectionContent = Color(0xFF212121),
     strikethrough = Color(0xFFAA5A64),
     deleteAction = Color(0xFFAA5A64),
-    deletedCardContainer = Color(0xFFC0C0C0)
+    deletedCardContainer = Color(0xFFC0C0C0),
+    deletedCardContent = Color(0xFF424242),
+    checkedItemContent = Color.Gray,
+    undoRowContent = Color.White,
+    undoRowBackground = Color.Red.copy(alpha = 0.8f)
 )
 
 val DarkLisTreeColors = LisTreeColors(
@@ -55,5 +63,9 @@ val DarkLisTreeColors = LisTreeColors(
     sectionContent = Color(0xFFEEEEEE),
     strikethrough = Color(0xFFF44336),
     deleteAction = Color(0xFFF44336),
-    deletedCardContainer = Color(0xFFE91E63)
+    deletedCardContainer = Color(0xFFE91E63),
+    deletedCardContent = Color(0xFFFFFFFF),
+    checkedItemContent = Color(0xFFBBBBBB),
+    undoRowContent = Color.White,
+    undoRowBackground = Color.Red.copy(alpha = 0.8f)
 )

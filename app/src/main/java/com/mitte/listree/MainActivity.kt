@@ -14,6 +14,10 @@ import com.mitte.listree.ui.theme.LisTreeTheme
 import com.mitte.listree.ui.views.ListView
 import com.mitte.listree.ui.views.MainView
 import com.mitte.listree.ui.views.SettingsScreen
+import com.mitte.listree.update.UpdateManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private val lisTreeViewModel by viewModels<LisTreeViewModel>()
@@ -21,6 +25,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        CoroutineScope(Dispatchers.Main).launch {
+            UpdateManager.checkForUpdate(this@MainActivity)
+        }
+
         setContent {
             LisTreeTheme {
                 val navController = rememberNavController()
@@ -43,7 +52,8 @@ class MainActivity : AppCompatActivity() {
                         val listId = backStackEntry.arguments?.getString("listId") ?: ""
                         ListView(
                             viewModel = lisTreeViewModel,
-                            listId = listId
+                            listId = listId,
+                            navController = navController
                         )
                     }
                     composable("settings") {
