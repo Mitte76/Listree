@@ -20,7 +20,8 @@ data class LisTreeList(
     val type: ListType? = ListType.ITEM_LIST,
     val parentId: String? = null,
     val lastModified: Long = System.currentTimeMillis(),
-    val order: Int = 0
+    val order: Int = 0,
+    val deleted: Boolean = false
 )
 
 data class ShoppingListWithItems(

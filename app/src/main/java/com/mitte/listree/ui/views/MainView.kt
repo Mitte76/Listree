@@ -48,6 +48,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,7 @@ fun MainView(
     navController: NavController
 ) {
     val shoppingLists by viewModel.treeLists.collectAsState()
+    val showDeleted by viewModel.showDeleted.collectAsState()
 
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var listToEditId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -265,7 +267,7 @@ fun MainView(
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) { ->
-            items(shoppingLists, key = { it.id }) { list ->
+            items(shoppingLists.filter { !it.deleted || showDeleted }, key = { it.id }) { list ->
                 ReorderableItem(reorderableState, key = list.id) { isDragging ->
                     val elevation by animateDpAsState(
                         if (isDragging) 8.dp else 2.dp,
@@ -298,7 +300,8 @@ fun MainView(
                                         contentDescription = "Reorder"
                                     )
                                 }
-                            }
+                            },
+                            showDeleted = showDeleted
                         )
                     } else {
                         SingleSection(
@@ -308,7 +311,8 @@ fun MainView(
                             onMoveItem = { listToMove = it },
                             onTap = { navController.navigate("shoppingItems/${list.id}") },
                             viewModel = viewModel,
-                            modifier = Modifier.draggableHandle()
+                            modifier = Modifier.draggableHandle(),
+                            showDeleted = showDeleted
                         )
                     }
                 }

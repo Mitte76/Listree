@@ -18,7 +18,8 @@ data class LisTreeColors(
     val sectionContainer: Color,
     val sectionContent: Color,
     val strikethrough: Color,
-    val deleteAction: Color
+    val deleteAction: Color,
+    val deletedCardContainer: Color
 )
 
 val LightLisTreeColors = LisTreeColors(
@@ -35,7 +36,8 @@ val LightLisTreeColors = LisTreeColors(
     sectionContainer = Color(0xFF212121),
     sectionContent = Color(0xFF212121),
     strikethrough = Color(0xFFAA5A64),
-    deleteAction = Color(0xFFAA5A64)
+    deleteAction = Color(0xFFAA5A64),
+    deletedCardContainer = Color(0xFFC0C0C0)
 )
 
 val DarkLisTreeColors = LisTreeColors(
@@ -52,5 +54,6 @@ val DarkLisTreeColors = LisTreeColors(
     sectionContainer = Color(0xFF462801),
     sectionContent = Color(0xFFEEEEEE),
     strikethrough = Color(0xFFF44336),
-    deleteAction = Color(0xFFF44336)
+    deleteAction = Color(0xFFF44336),
+    deletedCardContainer = Color(0xFF424242)
 )

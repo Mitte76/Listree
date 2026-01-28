@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [LisTreeList::class, LisTreeItem::class, ListShare::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class LisTreeDatabase : RoomDatabase() {

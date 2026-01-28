@@ -68,6 +68,7 @@ fun GroupSection(
     viewModel: LisTreeViewModel,
     navController: NavController,
     iconButton: @Composable () -> Unit,
+    showDeleted: Boolean
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var showMenu by remember { mutableStateOf(false) }
@@ -76,7 +77,7 @@ fun GroupSection(
 
         Surface(
             shape = CardDefaults.shape,
-            color = LisTreeTheme.colors.groupCardContainer,
+            color = if (list.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.groupCardContainer,
             contentColor = LisTreeTheme.colors.groupCardContent,
             shadowElevation = elevation,
             modifier = Modifier
@@ -180,7 +181,7 @@ fun GroupSection(
         AnimatedVisibility(list.isExpanded) {
             Column {
                 ReorderableColumn(
-                    list = list.subLists ?: emptyList(),
+                    list = list.subLists?.filter { !it.deleted || showDeleted } ?: emptyList(),
                     onSettle = { from, to ->
                         viewModel.moveSubList(list.id, from, to)
                     },
@@ -217,7 +218,8 @@ fun GroupSection(
                                                 contentDescription = stringResource(R.string.reorder)
                                             )
                                         }
-                                    }
+                                    },
+                                    showDeleted = showDeleted
                                 )
 
                             } else {
@@ -228,7 +230,8 @@ fun GroupSection(
                                     onMoveItem = onMoveItem,
                                     onTap = { navController.navigate("shoppingItems/${item.id}") },
                                     viewModel = viewModel,
-                                    modifier = Modifier.draggableHandle()
+                                    modifier = Modifier.draggableHandle(),
+                                    showDeleted = showDeleted
                                 )
 
                             }

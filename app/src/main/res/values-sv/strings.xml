@@ -52,6 +52,8 @@
     <string name="import_data_subtitle">Sammanfoga listor med data från en fil</string>
     <string name="import_confirm_title">Bekräfta import</string>
     <string name="import_confirm_text">Är du säker på att du vill sammanfoga dina nuvarande listor med data från den här filen?</string>
+    <string name="show_deleted_lists_title">Visa borttagna listor</string>
+    <string name="show_deleted_lists_subtitle">Visa borttagna listor och objekt på deras ursprungliga platser</string>
 
     <!-- Common -->
     <string name="item_settings">Inställningar för %1$s</string>

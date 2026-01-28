@@ -55,14 +55,15 @@ fun SingleSection(
     onMoveItem: (TreeList) -> Unit,
     onTap: () -> Unit,
     viewModel: LisTreeViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showDeleted: Boolean
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var showMenu by remember { mutableStateOf(false) }
 
     Surface(
         shape = CardDefaults.shape,
-        color = LisTreeTheme.colors.singleCardContainer,
+        color = if (list.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.singleCardContainer,
         contentColor = LisTreeTheme.colors.singleCardContent,
         tonalElevation = 0.dp,
         shadowElevation = elevation,
@@ -105,8 +106,8 @@ fun SingleSection(
                         Text(
                             text = pluralStringResource(
                                 R.plurals.item_count,
-                                list.items?.size ?: 0,
-                                list.items?.size ?: 0
+                                list.items?.count { !it.deleted || showDeleted } ?: 0,
+                                list.items?.count { !it.deleted || showDeleted } ?: 0
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = LisTreeTheme.colors.listMetaCount

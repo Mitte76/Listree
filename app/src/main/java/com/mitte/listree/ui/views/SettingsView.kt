@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +32,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +62,7 @@ fun SettingsScreen(
     var showImportConfirmDialog by remember { mutableStateOf<Uri?>(null) }
     var showExportConfirmDialog by remember { mutableStateOf(false) }
     var showExportResultDialog by remember { mutableStateOf<String?>(null) }
+    val showDeleted by viewModel.showDeleted.collectAsState()
     val context = LocalContext.current
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -177,7 +180,40 @@ fun SettingsScreen(
             PreferenceRow(title = stringResource(R.string.import_data_title),
                 subtitle = stringResource(R.string.import_data_subtitle),
                 onClick = { importLauncher.launch("application/json") })
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            CheckboxPreference(
+                title = stringResource(R.string.show_deleted_lists_title),
+                subtitle = stringResource(R.string.show_deleted_lists_subtitle),
+                checked = showDeleted,
+                onCheckedChange = { viewModel.setShowDeleted(it) }
+            )
         }
+    }
+}
+
+@Composable
+private fun CheckboxPreference(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = { onCheckedChange(!checked) }, role = Role.Checkbox)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title, style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = subtitle, style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        Checkbox(checked = checked, onCheckedChange = null)
     }
 }
 

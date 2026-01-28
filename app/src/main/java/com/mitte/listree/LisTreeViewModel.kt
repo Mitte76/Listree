@@ -35,8 +35,16 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     private val _treeLists = MutableStateFlow<List<TreeList>>(emptyList())
     val treeLists: StateFlow<List<TreeList>> = _treeLists.asStateFlow()
 
+    private val _showDeleted = MutableStateFlow(false)
+    val showDeleted: StateFlow<Boolean> = _showDeleted.asStateFlow()
+
     init {
         loadLists()
+    }
+
+    fun setShowDeleted(show: Boolean) {
+        _showDeleted.value = show
+        loadLists() // Reload to apply filter
     }
 
     private fun loadLists() {
@@ -50,7 +58,9 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                         name = dataItem.name,
                         isChecked = dataItem.isChecked,
                         isHeader = dataItem.isHeader,
-                        order = dataItem.order
+                        order = dataItem.order,
+                        lastModified = dataItem.lastModified,
+                        deleted = dataItem.deleted
                     )
                 }
                 TreeList(
@@ -60,12 +70,16 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                     parentId = dataList.parentId,
                     items = uiItems.sortedBy { it.order },
                     subLists = emptyList(),
-                    order = dataList.order
+                    order = dataList.order,
+                    lastModified = dataList.lastModified,
+                    deleted = dataList.deleted
                 )
             }
 
             fun buildTree(parentId: String?): List<TreeList> {
-                return allUiLists.filter { it.parentId == parentId }.sortedBy { it.order }
+                return allUiLists
+                    .filter { it.parentId == parentId && (!it.deleted || _showDeleted.value) }
+                    .sortedBy { it.order }
                     .map { it.copy(subLists = buildTree(it.id)) }
             }
 
@@ -77,17 +91,17 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         val gson = Gson()
         val jsonString = gson.toJson(treeLists.value)
 
-        if (uri != null) {
+        if (uri != null) { // For older Android versions via file picker
             try {
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                     outputStream.write(jsonString.toByteArray())
                 }
-                return uri.path
+                return uri.path // This might not be a user-friendly path
             } catch (e: Exception) {
                 e.printStackTrace()
                 return null
             }
-        } else {
+        } else { // For modern Android versions with MediaStore
             val timeStamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
             val fileName = "$timeStamp.json"
 
@@ -147,10 +161,12 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             val existingList = mutableExisting.find { it.name == importedList.name && it.parentId == parentId }
 
             if (existingList == null) {
+                // --- NEW LIST ---
                 val idMap = mutableMapOf<String, String>()
                 val newList = generateNewIds(importedList, parentId, idMap)
                 mutableExisting.add(newList)
             } else {
+                // --- MERGE CHILDREN --- (Only for groups)
                 if (existingList.type == ListType.GROUP_LIST && importedList.subLists != null) {
                     val mergedChildren = mergeLists(
                         existingList.subLists ?: emptyList(),
@@ -218,7 +234,9 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun getAllLists(lists: List<TreeList>): List<TreeList> {
-        return lists + lists.flatMap { getAllLists(it.subLists ?: emptyList()) }
+        return lists.flatMap { list ->
+            listOf(list) + getAllLists(list.subLists ?: emptyList())
+        }
     }
 
     fun getListById(listId: String): TreeList? {
@@ -277,7 +295,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     ): List<TreeList> {
         return lists.map { list ->
             if (list.id == parentGroupId) {
-                list.copy(subLists = ((list.subLists ?: emptyList()) + newSubGroup).sortedBy { it.order })
+                list.copy(subLists = ((list.subLists ?: emptyList()) + newSubGroup).sortedBy { it.order }, lastModified = System.currentTimeMillis())
             } else {
                 list.copy(subLists = list.subLists?.let {
                     mapAndAddSubGroup(
@@ -314,7 +332,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     ): List<TreeList> {
         return lists.map { list ->
             if (list.id == parentGroupId) {
-                list.copy(subLists = ((list.subLists ?: emptyList()) + newList).sortedBy { it.order })
+                list.copy(subLists = ((list.subLists ?: emptyList()) + newList).sortedBy { it.order }, lastModified = System.currentTimeMillis())
             } else {
                 list.copy(
                     subLists = list.subLists?.let {
@@ -346,15 +364,19 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         saveLists()
     }
 
+    private fun mapAndDeleteList(lists: List<TreeList>, listId: String): List<TreeList> {
+        return lists.map { list ->
+            if (list.id == listId) {
+                list.copy(deleted = true, lastModified = System.currentTimeMillis())
+            } else {
+                list.copy(subLists = list.subLists?.let { mapAndDeleteList(it, listId) })
+            }
+        }
+    }
+
     fun deleteList(listId: String) {
         _treeLists.update { currentLists ->
-            fun removeRecursively(lists: List<TreeList>): List<TreeList> {
-                val filteredList = lists.filterNot { it.id == listId }
-                return filteredList.map { list ->
-                    list.copy(subLists = list.subLists?.let { removeRecursively(it) })
-                }
-            }
-            removeRecursively(currentLists)
+            mapAndDeleteList(currentLists, listId)
         }
         saveLists()
     }
@@ -366,7 +388,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
-                list.copy(name = newName.trim())
+                list.copy(name = newName.trim(), lastModified = System.currentTimeMillis())
             } else {
                 list.copy(
                     subLists = list.subLists?.let {
@@ -408,7 +430,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 val mutableSubLists = list.subLists?.toMutableList()
                 if (mutableSubLists != null) {
                     mutableSubLists.add(to, mutableSubLists.removeAt(from))
-                    list.copy(subLists = mutableSubLists.mapIndexed { index, subList -> subList.copy(order = index) }.toList())
+                    list.copy(subLists = mutableSubLists.mapIndexed { index, subList -> subList.copy(order = index) }.toList(), lastModified = System.currentTimeMillis())
                 } else {
                     list
                 }
@@ -442,7 +464,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                         if (list.id == oldParentId) {
                             val newSubLists = list.subLists?.filterNot { it.id == listId }
                                 ?.mapIndexed { index, subList -> subList.copy(order = index) }
-                            list.copy(subLists = newSubLists)
+                            list.copy(subLists = newSubLists, lastModified = System.currentTimeMillis())
                         } else {
                             list.copy(subLists = list.subLists?.let { removeRecursively(it) })
                         }
@@ -461,7 +483,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                         if (list.id == newParentId) {
                             val newOrder = list.subLists?.size ?: 0
                             val updatedList = listToMove.copy(parentId = newParentId, order = newOrder)
-                            list.copy(subLists = ((list.subLists ?: emptyList()) + updatedList))
+                            list.copy(subLists = ((list.subLists ?: emptyList()) + updatedList), lastModified = System.currentTimeMillis())
                         } else {
                             list.copy(subLists = list.subLists?.let { addRecursively(it) })
                         }
@@ -487,7 +509,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 if (mutableItems != null) {
                     mutableItems.add(to, mutableItems.removeAt(from))
                     val updatedItems = mutableItems.mapIndexed { index, item -> item.copy(order = index) }
-                    list.copy(items = updatedItems)
+                    list.copy(items = updatedItems, lastModified = System.currentTimeMillis())
                 } else {
                     list
                 }
@@ -513,12 +535,12 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             if (list.id == listId) {
                 val updatedItems = list.items?.map { item ->
                     if (item.id == itemToToggle.id) {
-                        item.copy(isChecked = !item.isChecked)
+                        item.copy(isChecked = !item.isChecked, lastModified = System.currentTimeMillis())
                     } else {
                         item
                     }
                 }
-                list.copy(items = updatedItems)
+                list.copy(items = updatedItems, lastModified = System.currentTimeMillis())
             } else {
                 list.copy(subLists = list.subLists?.let {
                     mapAndToggleChecked(
@@ -545,7 +567,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
-                list.copy(items = ((list.items ?: emptyList()) + newItem).sortedBy { it.order })
+                list.copy(items = ((list.items ?: emptyList()) + newItem).sortedBy { it.order }, lastModified = System.currentTimeMillis())
             } else {
                 list.copy(subLists = list.subLists?.let { mapAndAddItem(it, listId, newItem) })
             }
@@ -577,12 +599,12 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             if (list.id == listId) {
                 val updatedItems = list.items?.map { item ->
                     if (item.id == itemId) {
-                        item.copy(name = newItemName.trim())
+                        item.copy(name = newItemName.trim(), lastModified = System.currentTimeMillis())
                     } else {
                         item
                     }
                 }
-                list.copy(items = updatedItems)
+                list.copy(items = updatedItems, lastModified = System.currentTimeMillis())
             } else {
                 list.copy(subLists = list.subLists?.let {
                     mapAndEditItemName(
@@ -610,10 +632,14 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
-                val updatedItems = list.items?.filterNot { it.id == itemToRemove.id }
-                    ?.sortedBy { it.order }
-                    ?.mapIndexed { index, item -> item.copy(order = index) }
-                list.copy(items = updatedItems)
+                val updatedItems = list.items?.map { item ->
+                    if (item.id == itemToRemove.id) {
+                        item.copy(deleted = true, lastModified = System.currentTimeMillis())
+                    } else {
+                        item
+                    }
+                }
+                list.copy(items = updatedItems, lastModified = System.currentTimeMillis())
             } else {
                 list.copy(subLists = list.subLists?.let {
                     mapAndRemoveItem(
@@ -632,4 +658,5 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         }
         saveLists()
     }
+
 }

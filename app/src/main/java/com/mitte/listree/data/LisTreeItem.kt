@@ -26,5 +26,6 @@ data class LisTreeItem(
     var isChecked: Boolean = false,
     var isHeader: Boolean = false,
     val lastModified: Long = System.currentTimeMillis(),
-    val order: Int = 0
+    val order: Int = 0,
+    val deleted: Boolean = false
 )

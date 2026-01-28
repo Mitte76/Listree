@@ -20,14 +20,36 @@ class LisTreeRepository(context: Context) {
 
     private suspend fun saveListRecursively(list: UiShoppingList, parentId: String?) {
         // TODO: The ownerId is hardcoded here. This should be replaced with the actual owner's ID.
-        val dataList = LisTreeList(list.id, "ownerId", list.name, list.type?.let { ListType.valueOf(it.name) }, parentId, order = list.order)
+        val dataList = LisTreeList(
+            id = list.id,
+            ownerId = "ownerId",
+            name = list.name,
+            type = list.type?.let { ListType.valueOf(it.name) },
+            parentId = parentId,
+            lastModified = list.lastModified,
+            order = list.order,
+            deleted = list.deleted
+        )
         shoppingDao.upsertShoppingList(dataList)
         list.items?.forEach { item ->
-            val dataItem = LisTreeItem(item.id, list.id, item.name, item.isChecked, item.isHeader, order = item.order)
+            val dataItem = LisTreeItem(
+                id = item.id,
+                listId = list.id,
+                name = item.name,
+                isChecked = item.isChecked,
+                isHeader = item.isHeader,
+                lastModified = item.lastModified,
+                order = item.order,
+                deleted = item.deleted
+            )
             shoppingDao.upsertShoppingItem(dataItem)
         }
         list.subLists?.forEach { subList ->
             saveListRecursively(subList, list.id)
         }
+    }
+
+    suspend fun removeItem(itemId: String) {
+        shoppingDao.removeItem(itemId, System.currentTimeMillis())
     }
 }

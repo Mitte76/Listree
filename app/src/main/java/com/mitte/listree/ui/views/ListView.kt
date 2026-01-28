@@ -112,6 +112,7 @@ fun ListView(
     listId: String
 ) {
     val allLists by viewModel.treeLists.collectAsState()
+    val showDeleted by viewModel.showDeleted.collectAsState()
 
     fun findListById(lists: List<TreeList>, id: String): TreeList? {
         for (list in lists) {
@@ -124,7 +125,7 @@ fun ListView(
 
     val currentList = findListById(allLists, listId)
         ?: TreeList(id = listId, name = stringResource(R.string.not_found), items = emptyList())
-    val items = currentList.items?.sortedBy { it.order } ?: emptyList()
+    val items = currentList.items?.filter { !it.deleted || showDeleted }?.sortedBy { it.order } ?: emptyList()
 
     var showAddItemDialog by remember { mutableStateOf(false) }
     var itemToEdit by remember { mutableStateOf<ListItem?>(null) }
@@ -203,6 +204,7 @@ fun ListView(
                         delay(2500)
                         if (itemsPendingDeletion.containsKey(item.id)) {
                             viewModel.removeItem(listId, item)
+                            itemsPendingDeletion = itemsPendingDeletion - item.id
                         }
                     }
                 }
@@ -214,7 +216,8 @@ fun ListView(
                             itemToEdit = selectedItem
                         },
                         viewModel,
-                        listId
+                        listId,
+                        showDeleted = showDeleted
                     )
 
                 } else {
@@ -235,7 +238,8 @@ fun ListView(
                         },
                         onUndoPendingDelete = {
                             itemsPendingDeletion = itemsPendingDeletion - item.id
-                        }
+                        },
+                        showDeleted = showDeleted
                     )
                 }
             }
@@ -254,8 +258,8 @@ fun LazyItemScope.HeaderItem(
     density: Density,
     onEditItem: (ListItem) -> Unit,
     viewModel: LisTreeViewModel,
-    listId: String
-
+    listId: String,
+    showDeleted: Boolean
 ) {
     ReorderableItem(reorderableState, key = item.id) { isDragging ->
 
@@ -269,7 +273,7 @@ fun LazyItemScope.HeaderItem(
         )
 
         Surface(
-            color = LisTreeTheme.colors.sectionContainer,
+            color = if (item.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.sectionContainer,
             contentColor = LisTreeTheme.colors.sectionContent,
             shadowElevation = elevation,
             modifier = Modifier
@@ -393,7 +397,8 @@ private fun LazyItemScope.NormalItem(
     listId: String,
     onEditItem: (ListItem) -> Unit,
     onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
-    onUndoPendingDelete: () -> Unit
+    onUndoPendingDelete: () -> Unit,
+    showDeleted: Boolean
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
@@ -488,7 +493,7 @@ private fun LazyItemScope.NormalItem(
                 ) {
                     Surface(
                         shape = CardDefaults.shape,
-                        color = LisTreeTheme.colors.itemContainer,
+                        color = if (item.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.itemContainer,
                         contentColor = LisTreeTheme.colors.itemContent,
                         shadowElevation = elevation,
                         modifier = Modifier
@@ -544,9 +549,9 @@ private fun LazyItemScope.NormalItem(
                                             Text(
                                                 text = item.name,
                                                 style = MaterialTheme.typography.bodyLarge,
-                                                color = if (item.isChecked) Color.Gray else LisTreeTheme.colors.itemContent
+                                                color = if (item.isChecked || item.deleted) Color.Gray else LisTreeTheme.colors.itemContent
                                             )
-                                            if (item.isChecked) {
+                                            if (item.isChecked && !item.deleted) {
                                                 Box(
                                                     modifier = Modifier
                                                         .fillMaxWidth()

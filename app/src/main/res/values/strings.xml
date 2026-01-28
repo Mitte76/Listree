@@ -51,6 +51,8 @@
     <string name="import_data_subtitle">Merge lists with data from a file</string>
     <string name="import_confirm_title">Confirm Import</string>
     <string name="import_confirm_text">Are you sure you want to merge your current lists with the data from this file?</string>
+    <string name="show_deleted_lists_title">Show deleted lists</string>
+    <string name="show_deleted_lists_subtitle">Show deleted lists and items in their original locations</string>
 
 
     <!-- Common -->

@@ -44,6 +44,9 @@ interface LisTreeDao {
     @Delete
     suspend fun deleteShoppingItem(item: LisTreeItem)
 
+    @Query("UPDATE shopping_items SET deleted = 1, lastModified = :timestamp WHERE id = :itemId")
+    suspend fun removeItem(itemId: String, timestamp: Long)
+
     @Query("DELETE FROM shopping_items")
     suspend fun deleteAllShoppingItems()
 
