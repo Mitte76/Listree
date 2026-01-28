@@ -54,6 +54,11 @@
     <string name="show_deleted_lists_title">Visa borttagna listor</string>
     <string name="show_deleted_lists_subtitle">Visa borttagna listor och objekt på deras ursprungliga platser</string>
 
+    <!-- Update Dialog -->
+    <string name="update_available_title">Uppdatering tillgänglig</string>
+    <string name="update_available_text">En ny version av appen finns tillgänglig. Vill du uppdatera?</string>
+    <string name="update_button">Uppdatera</string>
+
     <!-- Common -->
     <string name="item_settings">Inställningar för %1$s</string>
     <string name="edit">Redigera</string>

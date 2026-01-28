@@ -53,6 +53,10 @@
     <string name="show_deleted_lists_title">Show deleted lists</string>
     <string name="show_deleted_lists_subtitle">Show deleted lists and items in their original locations</string>
 
+    <!-- Update Dialog -->
+    <string name="update_available_title">Update Available</string>
+    <string name="update_available_text">A new version of the app is available. Would you like to update?</string>
+    <string name="update_button">Update</string>
 
     <!-- Common -->
     <string name="item_settings">Settings for %1$s</string>

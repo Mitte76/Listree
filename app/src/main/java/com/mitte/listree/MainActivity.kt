@@ -1,38 +1,83 @@
 package com.mitte.listree
 
+import android.app.DownloadManager
+import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.mitte.listree.model.UpdateInfo
 import com.mitte.listree.ui.theme.LisTreeTheme
 import com.mitte.listree.ui.views.ListView
 import com.mitte.listree.ui.views.MainView
 import com.mitte.listree.ui.views.SettingsScreen
+import com.mitte.listree.update.DownloadCompletedReceiver
 import com.mitte.listree.update.UpdateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
     private val lisTreeViewModel by viewModels<LisTreeViewModel>()
+    private val downloadCompletedReceiver = DownloadCompletedReceiver()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        CoroutineScope(Dispatchers.Main).launch {
-            UpdateManager.checkForUpdate(this@MainActivity)
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        ContextCompat.registerReceiver(this, downloadCompletedReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
+
+        val showUpdateDialog = mutableStateOf<UpdateInfo?>(null)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val updateInfo = UpdateManager.checkForUpdate(this@MainActivity)
+            if (updateInfo != null) {
+                withContext(Dispatchers.Main) {
+                    showUpdateDialog.value = updateInfo
+                }
+            }
         }
 
         setContent {
             LisTreeTheme {
                 val navController = rememberNavController()
+
+                if (showUpdateDialog.value != null) {
+                    AlertDialog(
+                        onDismissRequest = { showUpdateDialog.value = null },
+                        title = { Text(stringResource(R.string.update_available_title)) },
+                        text = { Text(stringResource(R.string.update_available_text)) },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    UpdateManager.startUpdateDownload(this@MainActivity, showUpdateDialog.value!!)
+                                    showUpdateDialog.value = null
+                                }
+                            ) {
+                                Text(stringResource(R.string.update_button))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showUpdateDialog.value = null }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        }
+                    )
+                }
 
                 NavHost(
                     navController = navController,
@@ -66,5 +111,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(downloadCompletedReceiver)
     }
 }

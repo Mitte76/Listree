@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,7 +44,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -62,8 +60,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainView(
-    viewModel: LisTreeViewModel,
-    navController: NavController
+    viewModel: LisTreeViewModel, navController: NavController
 ) {
     val shoppingLists by viewModel.treeLists.collectAsState()
     val showDeleted by viewModel.showDeleted.collectAsState()
@@ -91,44 +88,39 @@ fun MainView(
     }
 
     fun getFlatShoppingListWithDepth(
-        lists: List<TreeList>,
-        depth: Int = 0
+        lists: List<TreeList>, depth: Int = 0
     ): List<Pair<TreeList, Int>> {
         return lists.flatMap { list ->
             listOf(Pair(list, depth)) + getFlatShoppingListWithDepth(
-                list.subLists ?: emptyList(),
-                depth + 1
+                list.subLists ?: emptyList(), depth + 1
             )
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Your lists v2") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LisTreeTheme.colors.topAppBarContainer,
-                    titleContentColor = LisTreeTheme.colors.topAppBarTitle
-                ),
-                actions = {
-                    IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings_title)
-                        )
-                    }
+        TopAppBar(
+            title = { Text(stringResource(R.string.app_name)) },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = LisTreeTheme.colors.topAppBarContainer,
+                titleContentColor = LisTreeTheme.colors.topAppBarTitle
+            ),
+            actions = {
+                IconButton(onClick = { navController.navigate("settings") }) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = stringResource(R.string.settings_title)
+                    )
                 }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = LisTreeTheme.colors.topAppBarContainer
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_list))
-            }
-        },
-        modifier = Modifier.fillMaxSize()
+            })
+    }, floatingActionButton = {
+        FloatingActionButton(
+            onClick = { showAddDialog = true },
+            containerColor = LisTreeTheme.colors.topAppBarContainer
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_list))
+        }
+    }, modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         if (showAddDialog) {
             AddListDialog(
@@ -140,8 +132,7 @@ fun MainView(
                         viewModel.addList(listName)
                     }
                     showAddDialog = false
-                }
-            )
+                })
         }
 
         listToEditId?.let { id ->
@@ -153,8 +144,7 @@ fun MainView(
                     onConfirm = { newName ->
                         viewModel.editListName(id, newName)
                         listToEditId = null
-                    }
-                )
+                    })
             }
         }
 
@@ -162,29 +152,25 @@ fun MainView(
             parentGroupId?.let { id ->
                 val parentGroup = viewModel.getListById(id)
                 if (parentGroup != null) {
-                    AddSubListDialog(
-                        onDismissRequest = {
-                            showAddSubListDialog = false
-                            parentGroupId = null
-                        },
-                        onConfirm = { subListName, isGroup ->
-                            if (isGroup) {
-                                viewModel.addSubGroup(id, subListName)
-                            } else {
-                                viewModel.addSubList(id, subListName)
-                            }
-                            showAddSubListDialog = false
-                            parentGroupId = null
+                    AddSubListDialog(onDismissRequest = {
+                        showAddSubListDialog = false
+                        parentGroupId = null
+                    }, onConfirm = { subListName, isGroup ->
+                        if (isGroup) {
+                            viewModel.addSubGroup(id, subListName)
+                        } else {
+                            viewModel.addSubList(id, subListName)
                         }
-                    )
+                        showAddSubListDialog = false
+                        parentGroupId = null
+                    })
                 }
             }
         }
 
         listToMove?.let { list ->
             ModalBottomSheet(
-                onDismissRequest = { listToMove = null },
-                sheetState = bottomSheetState
+                onDismissRequest = { listToMove = null }, sheetState = bottomSheetState
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -201,13 +187,11 @@ fun MainView(
                                         .fillMaxWidth()
                                         .clickable {
                                             viewModel.moveList(
-                                                listId = list.id,
-                                                newParentId = null
+                                                listId = list.id, newParentId = null
                                             )
                                             closeMoveSheet()
                                         }
-                                        .padding(vertical = 12.dp)
-                                )
+                                        .padding(vertical = 12.dp))
                             }
                         }
 
@@ -223,8 +207,7 @@ fun MainView(
                                     .fillMaxWidth()
                                     .clickable {
                                         viewModel.moveList(
-                                            listId = list.id,
-                                            newParentId = destination.id
+                                            listId = list.id, newParentId = destination.id
                                         )
                                         closeMoveSheet()
                                     }
@@ -233,8 +216,7 @@ fun MainView(
                                         end = 16.dp,
                                         top = 12.dp,
                                         bottom = 12.dp
-                                    )
-                            )
+                                    ))
                         }
                     }
                 }
@@ -252,8 +234,7 @@ fun MainView(
             items(shoppingLists.filter { !it.deleted || showDeleted }, key = { it.id }) { list ->
                 ReorderableItem(reorderableState, key = list.id) { isDragging ->
                     val elevation by animateDpAsState(
-                        if (isDragging) 8.dp else 2.dp,
-                        label = "elevation"
+                        if (isDragging) 8.dp else 2.dp, label = "elevation"
                     )
 
                     if (list.type == ListType.GROUP_LIST) {
@@ -278,8 +259,7 @@ fun MainView(
                                     onClick = {},
                                 ) {
                                     Icon(
-                                        Icons.Rounded.DragHandle,
-                                        contentDescription = "Reorder"
+                                        Icons.Rounded.DragHandle, contentDescription = "Reorder"
                                     )
                                 }
                             },
@@ -305,8 +285,7 @@ fun MainView(
 
 @Composable
 private fun AddListDialog(
-    onDismissRequest: () -> Unit,
-    onConfirm: (String, Boolean) -> Unit
+    onDismissRequest: () -> Unit, onConfirm: (String, Boolean) -> Unit
 ) {
     var listName by rememberSaveable { mutableStateOf("") }
     var isGroup by rememberSaveable { mutableStateOf(false) }
@@ -338,14 +317,12 @@ private fun AddListDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
-        }
-    )
+        })
 }
 
 @Composable
 private fun AddSubListDialog(
-    onDismissRequest: () -> Unit,
-    onConfirm: (String, Boolean) -> Unit
+    onDismissRequest: () -> Unit, onConfirm: (String, Boolean) -> Unit
 ) {
     var listName by rememberSaveable { mutableStateOf("") }
     var isGroup by rememberSaveable { mutableStateOf(false) }
@@ -378,15 +355,12 @@ private fun AddSubListDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
-        }
-    )
+        })
 }
 
 @Composable
 private fun EditListDialog(
-    list: TreeList,
-    onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit
+    list: TreeList, onDismissRequest: () -> Unit, onConfirm: (String) -> Unit
 ) {
     var listName by rememberSaveable(list) { mutableStateOf(list.name) }
 
@@ -412,6 +386,5 @@ private fun EditListDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
-        }
-    )
+        })
 }

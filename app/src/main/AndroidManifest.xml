@@ -36,14 +36,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <receiver
-            android:name=".update.DownloadCompletedReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.app.action.DOWNLOAD_COMPLETE" />
-            </intent-filter>
-        </receiver>
-
     </application>
 
 </manifest>

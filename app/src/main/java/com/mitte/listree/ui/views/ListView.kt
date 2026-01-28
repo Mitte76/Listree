@@ -231,7 +231,6 @@ fun ListView(
                         },
                         viewModel,
                         listId,
-                        showDeleted = showDeleted
                     )
 
                 } else {
@@ -253,7 +252,6 @@ fun ListView(
                         onUndoPendingDelete = {
                             itemsPendingDeletion = itemsPendingDeletion - item.id
                         },
-                        showDeleted = showDeleted
                     )
                 }
             }
@@ -273,7 +271,6 @@ fun LazyItemScope.HeaderItem(
     onEditItem: (ListItem) -> Unit,
     viewModel: LisTreeViewModel,
     listId: String,
-    showDeleted: Boolean
 ) {
     ReorderableItem(reorderableState, key = item.id) { isDragging ->
 
@@ -422,7 +419,6 @@ private fun LazyItemScope.NormalItem(
     onEditItem: (ListItem) -> Unit,
     onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
     onUndoPendingDelete: () -> Unit,
-    showDeleted: Boolean
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
@@ -488,9 +484,7 @@ private fun LazyItemScope.NormalItem(
                         if (!item.deleted) {
                             val color by animateColorAsState(
                                 targetValue = when (dismissState.dismissDirection) {
-                                    SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> Color.Red.copy(
-                                        alpha = 0.8f
-                                    )
+                                    SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> LisTreeTheme.colors.undoRowBackground
 
                                     else -> Color.Transparent
                                 }, label = "background color"
