@@ -31,6 +31,7 @@ gitignore
 /app/build/
 /app/libs/
 /app/src/main/jniLibs/
+/app/release/
 
 # =========================================
 # Log files
