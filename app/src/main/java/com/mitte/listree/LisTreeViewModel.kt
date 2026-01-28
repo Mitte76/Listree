@@ -1,11 +1,19 @@
 package com.mitte.listree
 
 import android.app.Application
+import android.content.ContentValues
+import android.content.Context
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.mitte.listree.data.LisTreeRepository
-import com.mitte.listree.ui.models.ListType
 import com.mitte.listree.ui.models.ListItem
+import com.mitte.listree.ui.models.ListType
 import com.mitte.listree.ui.models.TreeList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +21,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class LisTreeViewModel(application: Application) : AndroidViewModel(application) {
@@ -23,6 +36,10 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     val treeLists: StateFlow<List<TreeList>> = _treeLists.asStateFlow()
 
     init {
+        loadLists()
+    }
+
+    private fun loadLists() {
         viewModelScope.launch {
             val allListsWithItems = repository.getShoppingLists().first()
             val allUiLists = allListsWithItems.map { dataListWithItems ->
@@ -48,15 +65,151 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             }
 
             fun buildTree(parentId: String?): List<TreeList> {
-                return allUiLists
-                    .filter { it.parentId == parentId }
-                    .sortedBy { it.order }
+                return allUiLists.filter { it.parentId == parentId }.sortedBy { it.order }
                     .map { it.copy(subLists = buildTree(it.id)) }
             }
 
             _treeLists.value = buildTree(null)
         }
     }
+
+    fun exportData(context: Context, uri: Uri?): String? {
+        val gson = Gson()
+        val jsonString = gson.toJson(treeLists.value)
+
+        if (uri != null) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(jsonString.toByteArray())
+                }
+                return uri.path
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return null
+            }
+        } else {
+            val timeStamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
+            val fileName = "$timeStamp.json"
+
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/LisTreeBackup")
+                }
+            }
+
+            return try {
+                val contentUri = MediaStore.Files.getContentUri("external")
+                context.contentResolver.insert(contentUri, contentValues)?.let { newUri ->
+                    context.contentResolver.openOutputStream(newUri)?.use { outputStream ->
+                        outputStream.write(jsonString.toByteArray())
+                    }
+                    val path = "${Environment.DIRECTORY_DOWNLOADS}/LisTreeBackup/$fileName"
+                    path
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    fun importData(context: Context, uri: Uri) {
+        val gson = Gson()
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                BufferedReader(InputStreamReader(inputStream)).use { reader ->
+                    val jsonString = reader.readText()
+                    val type = object : TypeToken<List<TreeList>>() {}.type
+                    val importedLists: List<TreeList> = gson.fromJson(jsonString, type)
+
+                    val existingLists = _treeLists.value
+                    val mergedToplevelLists = mergeLists(existingLists, importedLists, null)
+
+                    _treeLists.value = mergedToplevelLists
+                    saveLists()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun mergeLists(
+        existingLists: List<TreeList>,
+        importedLists: List<TreeList>,
+        parentId: String?
+    ): List<TreeList> {
+        val mutableExisting = existingLists.toMutableList()
+
+        importedLists.forEach { importedList ->
+            val existingList = mutableExisting.find { it.name == importedList.name && it.parentId == parentId }
+
+            if (existingList == null) {
+                val idMap = mutableMapOf<String, String>()
+                val newList = generateNewIds(importedList, parentId, idMap)
+                mutableExisting.add(newList)
+            } else {
+                if (existingList.type == ListType.GROUP_LIST && importedList.subLists != null) {
+                    val mergedChildren = mergeLists(
+                        existingList.subLists ?: emptyList(),
+                        importedList.subLists,
+                        existingList.id
+                    )
+                    val listIndex = mutableExisting.indexOf(existingList)
+                    if (listIndex != -1) {
+                        mutableExisting[listIndex] = existingList.copy(subLists = mergedChildren)
+                    }
+                }
+
+                if (existingList.type == ListType.ITEM_LIST && importedList.items != null) {
+                    val mergedItems = mergeItems(
+                        existingList.items ?: emptyList(),
+                        importedList.items
+                    )
+                    val listIndex = mutableExisting.indexOf(existingList)
+                    if (listIndex != -1) {
+                        mutableExisting[listIndex] = existingList.copy(items = mergedItems)
+                    }
+                }
+            }
+        }
+        return mutableExisting.mapIndexed { index, list -> list.copy(order = index) }
+    }
+
+    private fun mergeItems(existingItems: List<ListItem>, importedItems: List<ListItem>): List<ListItem> {
+        val mutableExisting = existingItems.toMutableList()
+        importedItems.forEach { importedItem ->
+            val existingItem = mutableExisting.find { it.name == importedItem.name }
+            if (existingItem == null) {
+                mutableExisting.add(importedItem.copy(id = UUID.randomUUID().toString()))
+            }
+        }
+        return mutableExisting.mapIndexed { index, item -> item.copy(order = index) }
+    }
+
+    private fun generateNewIds(treeList: TreeList, newParentId: String?, idMap: MutableMap<String, String>): TreeList {
+        val oldId = treeList.id
+        val newId = UUID.randomUUID().toString()
+        idMap[oldId] = newId
+
+        val newSubLists = treeList.subLists?.map { subList ->
+            generateNewIds(subList, newId, idMap)
+        }
+
+        val newItems = treeList.items?.map { item ->
+            item.copy(id = UUID.randomUUID().toString())
+        }
+
+        return treeList.copy(
+            id = newId,
+            parentId = newParentId,
+            subLists = newSubLists,
+            items = newItems
+        )
+    }
+
 
     private fun saveLists() {
         viewModelScope.launch {
@@ -281,15 +434,13 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
 
             // --- REMOVAL STEP ---
             val listRemovedTree = if (oldParentId == null) {
-                currentLists
-                    .filterNot { it.id == listId }
+                currentLists.filterNot { it.id == listId }
                     .mapIndexed { index, list -> list.copy(order = index) }
             } else {
                 fun removeRecursively(lists: List<TreeList>): List<TreeList> {
                     return lists.map { list ->
                         if (list.id == oldParentId) {
-                            val newSubLists = list.subLists
-                                ?.filterNot { it.id == listId }
+                            val newSubLists = list.subLists?.filterNot { it.id == listId }
                                 ?.mapIndexed { index, subList -> subList.copy(order = index) }
                             list.copy(subLists = newSubLists)
                         } else {
@@ -369,15 +520,13 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 }
                 list.copy(items = updatedItems)
             } else {
-                list.copy(
-                    subLists = list.subLists?.let {
-                        mapAndToggleChecked(
-                            it,
-                            listId,
-                            itemToToggle
-                        )
-                    }
-                )
+                list.copy(subLists = list.subLists?.let {
+                    mapAndToggleChecked(
+                        it,
+                        listId,
+                        itemToToggle
+                    )
+                })
             }
         }
     }
@@ -435,16 +584,14 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 }
                 list.copy(items = updatedItems)
             } else {
-                list.copy(
-                    subLists = list.subLists?.let {
-                        mapAndEditItemName(
-                            it,
-                            listId,
-                            itemId,
-                            newItemName
-                        )
-                    }
-                )
+                list.copy(subLists = list.subLists?.let {
+                    mapAndEditItemName(
+                        it,
+                        listId,
+                        itemId,
+                        newItemName
+                    )
+                })
             }
         }
     }
@@ -463,21 +610,18 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     ): List<TreeList> {
         return lists.map { list ->
             if (list.id == listId) {
-                val updatedItems = list.items
-                    ?.filterNot { it.id == itemToRemove.id }
+                val updatedItems = list.items?.filterNot { it.id == itemToRemove.id }
                     ?.sortedBy { it.order }
                     ?.mapIndexed { index, item -> item.copy(order = index) }
                 list.copy(items = updatedItems)
             } else {
-                list.copy(
-                    subLists = list.subLists?.let {
-                        mapAndRemoveItem(
-                            it,
-                            listId,
-                            itemToRemove
-                        )
-                    }
-                )
+                list.copy(subLists = list.subLists?.let {
+                    mapAndRemoveItem(
+                        it,
+                        listId,
+                        itemToRemove
+                    )
+                })
             }
         }
     }

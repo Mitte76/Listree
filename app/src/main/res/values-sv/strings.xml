@@ -40,6 +40,18 @@
     <!-- SettingsView -->
     <string name="back_button_description">Tillbaka</string>
     <string name="language_setting_title">Språk</string>
+    <string name="export_data_title">Exportera data</string>
+    <string name="export_data_subtitle">Spara alla dina listor till en fil</string>
+    <string name="export_confirm_title">Bekräfta export</string>
+    <string name="export_confirm_text">Vill du exportera alla dina listor till en fil?</string>
+    <string name="export_success_title">Exporten lyckades</string>
+    <string name="export_success_text">Din data har sparats till:\n%1$s</string>
+    <string name="export_failed_title">Exporten misslyckades</string>
+    <string name="export_failed_text">Kunde inte spara din data.</string>
+    <string name="import_data_title">Importera data</string>
+    <string name="import_data_subtitle">Sammanfoga listor med data från en fil</string>
+    <string name="import_confirm_title">Bekräfta import</string>
+    <string name="import_confirm_text">Är du säker på att du vill sammanfoga dina nuvarande listor med data från den här filen?</string>
 
     <!-- Common -->
     <string name="item_settings">Inställningar för %1$s</string>
@@ -47,6 +59,8 @@
     <string name="delete">Ta bort</string>
     <string name="reorder">Ändra ordning</string>
     <string name="cancel">Avbryt</string>
+    <string name="confirm">Bekräfta</string>
+    <string name="ok">OK</string>
     <string name="save">Spara</string>
     <string name="voice_input">Röstinmatning</string>
 </resources>

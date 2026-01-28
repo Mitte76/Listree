@@ -49,7 +49,8 @@ class MainActivity : AppCompatActivity() {
                     composable("settings") {
                         SettingsScreen(
                             navController = navController,
-                            mainActivity = this@MainActivity
+                            mainActivity = this@MainActivity,
+                            viewModel = lisTreeViewModel
                         )
                     }
                 }

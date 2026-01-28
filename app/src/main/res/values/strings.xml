@@ -39,6 +39,19 @@
     <!-- SettingsView -->
     <string name="back_button_description">Back</string>
     <string name="language_setting_title">Language</string>
+    <string name="export_data_title">Export data</string>
+    <string name="export_data_subtitle">Save all your lists to a file</string>
+    <string name="export_confirm_title">Confirm Export</string>
+    <string name="export_confirm_text">Do you want to export all your lists to a file?</string>
+    <string name="export_success_title">Export Successful</string>
+    <string name="export_success_text">Your data has been saved to:\n%1$s</string>
+    <string name="export_failed_title">Export Failed</string>
+    <string name="export_failed_text">Could not save your data.</string>
+    <string name="import_data_title">Import data</string>
+    <string name="import_data_subtitle">Merge lists with data from a file</string>
+    <string name="import_confirm_title">Confirm Import</string>
+    <string name="import_confirm_text">Are you sure you want to merge your current lists with the data from this file?</string>
+
 
     <!-- Common -->
     <string name="item_settings">Settings for %1$s</string>
@@ -46,6 +59,8 @@
     <string name="delete">Delete</string>
     <string name="reorder">Reorder</string>
     <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="ok">OK</string>
     <string name="save">Save</string>
     <string name="voice_input">Voice Input</string>
 </resources>
