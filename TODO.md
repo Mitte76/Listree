@@ -1,0 +1,4 @@
+- [ ] Make Color Theme Editor
+- [ ] Implement List sharing through Androids share function
+- [ ] Add search functionality
+- [ ] Add quantity to list items
