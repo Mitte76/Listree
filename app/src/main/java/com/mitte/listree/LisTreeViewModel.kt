@@ -79,11 +79,16 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 )
             }
 
+            val expandedIds = preferencesManager.getExpandedListIds()
+
             fun buildTree(parentId: String?): List<TreeList> {
                 return allUiLists
                     .filter { it.parentId == parentId && (!it.deleted || _showDeleted.value) }
                     .sortedBy { it.order }
-                    .map { it.copy(subLists = buildTree(it.id)) }
+                    .map { it.copy(
+                        isExpanded = it.id in expandedIds,
+                        subLists = buildTree(it.id)
+                    ) }
             }
 
             _treeLists.value = buildTree(null)
@@ -259,6 +264,8 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             }
             mapList(currentLists)
         }
+        val expandedIds = getAllLists(_treeLists.value).filter { it.isExpanded }.map { it.id }.toSet()
+        preferencesManager.saveExpandedListIds(expandedIds)
     }
 
     fun addList(listName: String) {
@@ -728,6 +735,9 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         _treeLists.update { currentLists ->
             permanentlyDelete(currentLists)
         }
+        val expandedIds = getAllLists(_treeLists.value).filter { it.isExpanded }.map { it.id }.toSet()
+        preferencesManager.saveExpandedListIds(expandedIds)
+
         saveLists()
     }
 }
