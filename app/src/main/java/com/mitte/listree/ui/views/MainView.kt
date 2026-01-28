@@ -105,7 +105,7 @@ fun MainView(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.your_lists)) },
+                title = { Text("Your lists v2") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = LisTreeTheme.colors.topAppBarContainer,
                     titleContentColor = LisTreeTheme.colors.topAppBarTitle
