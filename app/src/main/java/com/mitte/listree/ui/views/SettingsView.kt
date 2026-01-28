@@ -62,6 +62,7 @@ fun SettingsScreen(
     var showImportConfirmDialog by remember { mutableStateOf<Uri?>(null) }
     var showExportConfirmDialog by remember { mutableStateOf(false) }
     var showExportResultDialog by remember { mutableStateOf<String?>(null) }
+    var showClearDeletedConfirmDialog by remember { mutableStateOf(false) }
     val showDeleted by viewModel.showDeleted.collectAsState()
     val context = LocalContext.current
 
@@ -118,6 +119,26 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showExportConfirmDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            })
+    }
+
+    if (showClearDeletedConfirmDialog) {
+        AlertDialog(onDismissRequest = { showClearDeletedConfirmDialog = false },
+            title = { Text(stringResource(R.string.clear_deleted_confirm_title)) },
+            text = { Text(stringResource(R.string.clear_deleted_confirm_text)) },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearDeletedItems()
+                    showClearDeletedConfirmDialog = false
+                }) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDeletedConfirmDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             })
@@ -186,6 +207,12 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.show_deleted_lists_subtitle),
                 checked = showDeleted,
                 onCheckedChange = { viewModel.setShowDeleted(it) }
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            PreferenceRow(
+                title = stringResource(R.string.clear_deleted_title),
+                subtitle = stringResource(R.string.clear_deleted_subtitle),
+                onClick = { showClearDeletedConfirmDialog = true }
             )
         }
     }

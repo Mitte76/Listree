@@ -52,6 +52,10 @@
     <string name="import_confirm_text">Are you sure you want to merge your current lists with the data from this file?</string>
     <string name="show_deleted_lists_title">Show deleted lists</string>
     <string name="show_deleted_lists_subtitle">Show deleted lists and items in their original locations</string>
+    <string name="clear_deleted_title">Clear deleted items</string>
+    <string name="clear_deleted_subtitle">Permanently remove all deleted lists and items</string>
+    <string name="clear_deleted_confirm_title">Confirm Deletion</string>
+    <string name="clear_deleted_confirm_text">Are you sure you want to permanently delete all items? This action cannot be undone.</string>
 
     <!-- Update Dialog -->
     <string name="update_available_title">Update Available</string>

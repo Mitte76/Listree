@@ -53,6 +53,10 @@
     <string name="import_confirm_text">Är du säker på att du vill sammanfoga dina nuvarande listor med data från den här filen?</string>
     <string name="show_deleted_lists_title">Visa borttagna listor</string>
     <string name="show_deleted_lists_subtitle">Visa borttagna listor och objekt på deras ursprungliga platser</string>
+    <string name="clear_deleted_title">Rensa borttagna poster</string>
+    <string name="clear_deleted_subtitle">Ta bort alla borttagna listor och poster permanent</string>
+    <string name="clear_deleted_confirm_title">Bekräfta borttagning</string>
+    <string name="clear_deleted_confirm_text">Är du säker på att du vill ta bort alla poster permanent? Denna åtgärd kan inte ångras.</string>
 
     <!-- Update Dialog -->
     <string name="update_available_title">Uppdatering tillgänglig</string>

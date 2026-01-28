@@ -712,4 +712,22 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         }
         saveLists()
     }
+
+    private fun permanentlyDelete(lists: List<TreeList>): List<TreeList> {
+        return lists
+            .filter { !it.deleted }
+            .map { list ->
+                val filteredSubLists = list.subLists?.let { permanentlyDelete(it) }
+                val filteredItems = list.items?.filter { !it.deleted }?.mapIndexed { index, item -> item.copy(order = index) }
+                list.copy(subLists = filteredSubLists, items = filteredItems)
+            }
+            .mapIndexed { index, list -> list.copy(order = index) }
+    }
+
+    fun clearDeletedItems() {
+        _treeLists.update { currentLists ->
+            permanentlyDelete(currentLists)
+        }
+        saveLists()
+    }
 }
