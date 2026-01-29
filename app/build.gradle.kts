@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.reorderable)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.kotlin.reflect)
     ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)

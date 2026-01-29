@@ -83,7 +83,7 @@ fun SingleSection(
                             interactionSource.emit(PressInteraction.Cancel(press))
                         }
                     },
-                    onTap = { if (!list.deleted) onTap() }
+                    onTap = { onTap() }
                 )
             },
     ) {

@@ -12,6 +12,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
+import com.mitte.listree.data.ThemePersistence
 
 private val LocalLisTreeColors = staticCompositionLocalOf { LightLisTreeColors }
 
@@ -19,11 +20,13 @@ private val LocalLisTreeColors = staticCompositionLocalOf { LightLisTreeColors }
 fun LisTreeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
+    customColors: LisTreeColors? = null,
     content: @Composable () -> Unit
 ) {
+    val context = LocalContext.current
+    val themePersistence = ThemePersistence(context)
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
@@ -31,9 +34,13 @@ fun LisTreeTheme(
         else -> lightColorScheme()
     }
 
-    val customColors = if (darkTheme) DarkLisTreeColors else LightLisTreeColors
+    val colorsToProvide = customColors ?: if (darkTheme) {
+        themePersistence.loadTheme("dark") ?: DarkLisTreeColors
+    } else {
+        themePersistence.loadTheme("light") ?: LightLisTreeColors
+    }
 
-    CompositionLocalProvider(LocalLisTreeColors provides customColors) {
+    CompositionLocalProvider(LocalLisTreeColors provides colorsToProvide) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

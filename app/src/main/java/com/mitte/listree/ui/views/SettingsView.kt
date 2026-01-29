@@ -192,6 +192,10 @@ fun SettingsScreen(
             })
     }, modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
+            PreferenceRow(title = "Theme Editor",
+                subtitle = "Customize the look and feel of the app",
+                onClick = { navController.navigate("themeEditor") })
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             LanguagePreference { showLanguageDialog = true }
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             PreferenceRow(title = stringResource(R.string.export_data_title),

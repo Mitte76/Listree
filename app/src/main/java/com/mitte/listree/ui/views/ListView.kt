@@ -225,24 +225,26 @@ fun ListView(
 
                 if (item.isHeader) {
                     HeaderItem(
-                        reorderableState, item, density,
+                        reorderableState = reorderableState,
+                        item = item,
+                        density = density,
                         onEditItem = { selectedItem ->
                             itemToEdit = selectedItem
                         },
-                        viewModel,
-                        listId,
+                        viewModel = viewModel,
+                        listId = listId,
                     )
 
                 } else {
 
                     NormalItem(
-                        reorderableState,
-                        item,
-                        swipeDirection,
-                        density,
-                        itemHeights,
-                        viewModel,
-                        listId,
+                        reorderableState = reorderableState,
+                        item = item,
+                        swipeDirection = swipeDirection,
+                        density = density,
+                        itemHeights = itemHeights,
+                        viewModel = viewModel,
+                        listId = listId,
                         onEditItem = { selectedItem ->
                             itemToEdit = selectedItem
                         },
@@ -271,6 +273,7 @@ fun LazyItemScope.HeaderItem(
     onEditItem: (ListItem) -> Unit,
     viewModel: LisTreeViewModel,
     listId: String,
+    onTap: (() -> Unit)? = null,
 ) {
     ReorderableItem(reorderableState, key = item.id) { isDragging ->
 
@@ -306,14 +309,16 @@ fun LazyItemScope.HeaderItem(
                                 interactionSource.emit(PressInteraction.Cancel(press))
                             }
                         },
-                        onTap = { },
+                        onTap = { onTap?.invoke() },
                         onLongPress = { offset ->
-                            showMenu = true
-                            pressOffset = with(density) {
-                                DpOffset(
-                                    offset.x.toDp(),
-                                    offset.y.toDp()
-                                )
+                            if (onTap == null) {
+                                showMenu = true
+                                pressOffset = with(density) {
+                                    DpOffset(
+                                        offset.x.toDp(),
+                                        offset.y.toDp()
+                                    )
+                                }
                             }
                         }
                     )
@@ -408,7 +413,7 @@ fun LazyItemScope.HeaderItem(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun LazyItemScope.NormalItem(
+fun LazyItemScope.NormalItem(
     reorderableState: ReorderableLazyListState,
     item: ListItem,
     swipeDirection: SwipeToDismissBoxValue?,
@@ -419,6 +424,7 @@ private fun LazyItemScope.NormalItem(
     onEditItem: (ListItem) -> Unit,
     onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
     onUndoPendingDelete: () -> Unit,
+    onTap: (() -> Unit)? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
@@ -542,16 +548,25 @@ private fun LazyItemScope.NormalItem(
                                         }
                                     },
                                     onTap = {
-                                        if (!item.deleted) viewModel.toggleChecked(listId, item)
+                                        if (onTap != null) {
+                                            onTap()
+                                        } else {
+                                            if (!item.deleted) viewModel.toggleChecked(
+                                                listId,
+                                                item
+                                            )
+                                        }
                                     },
                                     onLongPress = { offset ->
-                                        if (!item.deleted) {
-                                            showMenu = true
-                                            pressOffset = with(density) {
-                                                DpOffset(
-                                                    offset.x.toDp(),
-                                                    offset.y.toDp()
-                                                )
+                                        if (onTap == null) {
+                                            if (!item.deleted) {
+                                                showMenu = true
+                                                pressOffset = with(density) {
+                                                    DpOffset(
+                                                        offset.x.toDp(),
+                                                        offset.y.toDp()
+                                                    )
+                                                }
                                             }
                                         }
                                     }
