@@ -248,11 +248,11 @@ fun ThemeEditorScreen(navController: NavController) {
     val themePersistence = ThemePersistence(context)
     val isDarkTheme = isSystemInDarkTheme()
     val themeName = if (isDarkTheme) "dark" else "light"
+    val defaultColors = if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
     var hasChanges by remember { mutableStateOf(false) }
     val (customColors, setCustomColors) = remember {
         mutableStateOf(
-            themePersistence.loadTheme(themeName)
-                ?: if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
+            themePersistence.loadTheme(themeName, defaultColors)
         )
     }
 
@@ -264,10 +264,9 @@ fun ThemeEditorScreen(navController: NavController) {
             if (themeChanged) {
                 hasChanges = true
                 setCustomColors(
-                    themePersistence.loadTheme(themeName)
-                        ?: if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
+                    themePersistence.loadTheme(themeName, defaultColors)
                 )
-                savedStateHandle.set("theme_changed", false)
+                savedStateHandle["theme_changed"] = false
             }
         }
     }
@@ -288,10 +287,10 @@ fun ThemeEditorScreen(navController: NavController) {
             onResetToDefault = {
                 themePersistence.saveTheme(
                     themeName,
-                    if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
+                    defaultColors
                 )
                 setCustomColors(
-                    if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
+                    defaultColors
                 )
                 hasChanges = true
             }

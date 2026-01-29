@@ -35,9 +35,9 @@ fun LisTreeTheme(
     }
 
     val colorsToProvide = customColors ?: if (darkTheme) {
-        themePersistence.loadTheme("dark") ?: DarkLisTreeColors
+        themePersistence.loadTheme("dark", DarkLisTreeColors)
     } else {
-        themePersistence.loadTheme("light") ?: LightLisTreeColors
+        themePersistence.loadTheme("light", LightLisTreeColors)
     }
 
     CompositionLocalProvider(LocalLisTreeColors provides colorsToProvide) {

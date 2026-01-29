@@ -48,7 +48,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        saveDefaultThemes()
         enableEdgeToEdge()
 
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
@@ -68,11 +67,11 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val isDarkTheme = isSystemInDarkTheme()
             val themeName = if (isDarkTheme) "dark" else "light"
+            val defaultColors = if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
             val themePersistence = remember { ThemePersistence(this) }
             var customColors by remember {
                 mutableStateOf(
-                    themePersistence.loadTheme(themeName)
-                        ?: if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
+                    themePersistence.loadTheme(themeName, defaultColors)
                 )
             }
             val navController = rememberNavController()
@@ -81,8 +80,7 @@ class MainActivity : AppCompatActivity() {
 
             LaunchedEffect(themeChangedState?.value) {
                 if (themeChangedState?.value == true) {
-                    customColors = themePersistence.loadTheme(themeName)
-                        ?: if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
+                    customColors = themePersistence.loadTheme(themeName, defaultColors)
                     navBackStackEntry?.savedStateHandle?.set("theme_changed", false)
                 }
             }
@@ -154,16 +152,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-        }
-    }
-
-    private fun saveDefaultThemes() {
-        val themePersistence = ThemePersistence(this)
-        if (themePersistence.loadTheme("light") == null) {
-            themePersistence.saveTheme("light", LightLisTreeColors)
-        }
-        if (themePersistence.loadTheme("dark") == null) {
-            themePersistence.saveTheme("dark", DarkLisTreeColors)
         }
     }
 

@@ -65,8 +65,8 @@ fun SingleSection(
 
     Surface(
         shape = CardDefaults.shape,
-        color = if (list.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.singleCardContainer,
-        contentColor = LisTreeTheme.colors.singleCardContent,
+        color = if (list.deleted) LisTreeTheme.colors.singleCardDeletedContainer else LisTreeTheme.colors.singleCardContainer,
+        contentColor = if (list.deleted) LisTreeTheme.colors.singleCardDeletedContent else LisTreeTheme.colors.singleCardContent,
         tonalElevation = 0.dp,
         shadowElevation = elevation,
         modifier = Modifier

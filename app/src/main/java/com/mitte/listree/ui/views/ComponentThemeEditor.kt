@@ -29,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,6 +64,7 @@ fun ComponentThemeEditorScreen(
     val themePersistence = ThemePersistence(context)
     val isDarkTheme = isSystemInDarkTheme()
     val themeName = if (isDarkTheme) "dark" else "light"
+    val defaultColors = if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
     val dummyViewModel: LisTreeViewModel = viewModel()
     val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(lazyListState) { _, _ -> }
@@ -81,26 +83,27 @@ fun ComponentThemeEditorScreen(
 
     val (customColors, setCustomColors) = remember {
         mutableStateOf(
-            themePersistence.loadTheme(themeName)
-                ?: if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
+            themePersistence.loadTheme(themeName, defaultColors)
         )
     }
 
     val colorNames = when (componentName) {
         "topAppBar" -> listOf("topAppBarContainer", "topAppBarTitle")
         "groupSection" -> listOf("groupCardContainer", "groupCardContent")
-        "groupSectionDeleted" -> listOf("deletedCardContainer", "deletedCardContent")
+        "groupSectionDeleted" -> listOf("groupCardDeletedContainer", "groupCardDeletedContent")
         "singleSection" -> listOf("singleCardContainer", "singleCardContent")
-        "singleSectionDeleted" -> listOf("deletedCardContainer", "deletedCardContent")
-        "headerItem" -> listOf("sectionContainer", "sectionContent")
-        "headerItemDeleted" -> listOf("deletedCardContainer", "deletedCardContent")
+        "singleSectionDeleted" -> listOf("singleCardDeletedContainer", "singleCardDeletedContent")
+        "headerItem" -> listOf("headerItemContainer", "headerItemContent")
+        "headerItemDeleted" -> listOf("headerItemDeletedContainer", "headerItemDeletedContent")
         "normalItem", "normalItemChecked" -> listOf(
-            "itemContainer",
-            "itemContent",
-            "checkedItemContent",
+            "normalItemContainer",
+            "normalItemContent",
+            "normalItemCheckedContainer",
+            "normalItemCheckedContent",
             "strikethrough"
         )
-        "normalItemDeleted" -> listOf("deletedCardContainer", "deletedCardContent")
+
+        "normalItemDeleted" -> listOf("normalItemDeletedContainer", "normalItemDeletedContent")
         else -> emptyList()
     }
 
@@ -120,9 +123,6 @@ fun ComponentThemeEditorScreen(
             item {
                 LisTreeTheme(customColors = customColors) {
                     when (componentName) {
-                        "topAppBar" -> {
-                            TopAppBar(title = { Text("Top App Bar") })
-                        }
 
                         "groupSection" -> {
                             GroupSection(
@@ -260,10 +260,9 @@ fun ComponentThemeEditorScreen(
                     if (prop != null) {
                         val color = prop.get(customColors) as Color
                         ColorPicker(label = colorName, color = color, onColorChange = { newColor ->
-                            themePersistence.saveColor(themeName, colorName, newColor)
+                            themePersistence.saveColor(themeName, colorName, newColor, defaultColors)
                             setCustomColors(
-                                themePersistence.loadTheme(themeName)
-                                    ?: if (isDarkTheme) DarkLisTreeColors else LightLisTreeColors
+                                themePersistence.loadTheme(themeName, defaultColors)
                             )
                             hasChanges = true
                         })
@@ -309,10 +308,10 @@ fun ColorSliderDialog(
     onColorChange: (Color) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var red by remember { mutableStateOf(color.red) }
-    var green by remember { mutableStateOf(color.green) }
-    var blue by remember { mutableStateOf(color.blue) }
-    var alpha by remember { mutableStateOf(color.alpha) }
+    var red by remember { mutableFloatStateOf(color.red) }
+    var green by remember { mutableFloatStateOf(color.green) }
+    var blue by remember { mutableFloatStateOf(color.blue) }
+    var alpha by remember { mutableFloatStateOf(color.alpha) }
 
     LaunchedEffect(color) {
         red = color.red

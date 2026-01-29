@@ -287,8 +287,8 @@ fun LazyItemScope.HeaderItem(
         )
 
         Surface(
-            color = if (item.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.sectionContainer,
-            contentColor = if (item.deleted) LisTreeTheme.colors.deletedCardContent else LisTreeTheme.colors.sectionContent,
+            color = if (item.deleted) LisTreeTheme.colors.headerItemDeletedContainer else LisTreeTheme.colors.headerItemContainer,
+            contentColor = if (item.deleted) LisTreeTheme.colors.headerItemDeletedContent else LisTreeTheme.colors.headerItemContent,
             shadowElevation = elevation,
             modifier = Modifier
                 .alpha(if (item.deleted) 0.6f else 1f)
@@ -520,8 +520,8 @@ fun LazyItemScope.NormalItem(
                 ) {
                     Surface(
                         shape = CardDefaults.shape,
-                        color = if (item.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.itemContainer,
-                        contentColor = if (item.deleted) LisTreeTheme.colors.deletedCardContent else LisTreeTheme.colors.itemContent,
+                        color = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContainer else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContainer else LisTreeTheme.colors.normalItemContainer,
+                        contentColor = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContent else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContent else LisTreeTheme.colors.normalItemContent,
                         shadowElevation = elevation,
                         modifier = Modifier
                             .alpha(if (item.deleted) 0.6f else 1f)
@@ -590,7 +590,7 @@ fun LazyItemScope.NormalItem(
                                             Text(
                                                 text = item.name,
                                                 style = MaterialTheme.typography.bodyLarge,
-                                                color = if (item.deleted) LisTreeTheme.colors.deletedCardContent else if (item.isChecked) LisTreeTheme.colors.checkedItemContent else LisTreeTheme.colors.itemContent
+                                                color = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContent else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContent else LisTreeTheme.colors.normalItemContent
                                             )
                                             if (item.isChecked && !item.deleted) {
                                                 Box(
@@ -731,7 +731,7 @@ private fun AddItemDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(stringResource(R.string.add_new_item_title)) },
         text = {
-            Column() {
+            Column {
                 OutlinedTextField(
                     value = itemName,
                     onValueChange = { itemName = it },

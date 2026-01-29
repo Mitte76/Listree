@@ -79,8 +79,8 @@ fun GroupSection(
 
         Surface(
             shape = CardDefaults.shape,
-            color = if (list.deleted) LisTreeTheme.colors.deletedCardContainer else LisTreeTheme.colors.groupCardContainer,
-            contentColor = LisTreeTheme.colors.groupCardContent,
+            color = if (list.deleted) LisTreeTheme.colors.groupCardDeletedContainer else LisTreeTheme.colors.groupCardContainer,
+            contentColor = if (list.deleted) LisTreeTheme.colors.groupCardDeletedContent else LisTreeTheme.colors.groupCardContent,
             shadowElevation = elevation,
             modifier = Modifier
                 .indication(interactionSource, ripple())
@@ -107,13 +107,7 @@ fun GroupSection(
                 },
         ) {
             Box {
-                Icon(
-                    imageVector = if (list.isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 2.dp)
-                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -126,6 +120,13 @@ fun GroupSection(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        Icon(
+                            imageVector = if (list.isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(bottom = 2.dp)
+                        )
+
                         Text(
                             text = list.name,
                             style = MaterialTheme.typography.titleLarge,
