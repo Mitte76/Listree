@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +22,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -312,12 +314,18 @@ fun ColorSliderDialog(
     var green by remember { mutableFloatStateOf(color.green) }
     var blue by remember { mutableFloatStateOf(color.blue) }
     var alpha by remember { mutableFloatStateOf(color.alpha) }
+    var hexText by remember { mutableStateOf("") }
 
     LaunchedEffect(color) {
         red = color.red
         green = color.green
         blue = color.blue
         alpha = color.alpha
+        hexText = String.format("%02X%02X%02X%02X", (alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
+    }
+
+    LaunchedEffect(red, green, blue, alpha) {
+        hexText = String.format("%02X%02X%02X%02X", (alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
     }
 
     AlertDialog(
@@ -333,6 +341,28 @@ fun ColorSliderDialog(
                 Slider(value = blue, onValueChange = { blue = it })
                 Text("Alpha")
                 Slider(value = alpha, onValueChange = { alpha = it })
+
+                OutlinedTextField(
+                    value = hexText,
+                    onValueChange = { newText ->
+                        if (newText.length <= 8) {
+                            hexText = newText.uppercase()
+                            if (newText.length == 8) {
+                                newText.toLongOrNull(16)?.let { colorLong ->
+                                    alpha = ((colorLong shr 24) and 0xFF) / 255f
+                                    red = ((colorLong shr 16) and 0xFF) / 255f
+                                    green = ((colorLong shr 8) and 0xFF) / 255f
+                                    blue = (colorLong and 0xFF) / 255f
+                                }
+                            }
+                        }
+                    },
+                    label = { Text("Hex (AARRGGBB)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Box(
                     modifier = Modifier
                         .size(100.dp)
