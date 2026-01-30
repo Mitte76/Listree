@@ -83,7 +83,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
 
             fun buildTree(parentId: String?): List<TreeList> {
                 return allUiLists
-                    .filter { it.parentId == parentId && (!it.deleted || _showDeleted.value) }
+                    .filter { it.parentId == parentId }
                     .sortedBy { it.order }
                     .map { it.copy(
                         isExpanded = it.id in expandedIds,

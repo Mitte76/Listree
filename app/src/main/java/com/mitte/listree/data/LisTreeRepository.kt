@@ -1,6 +1,7 @@
 package com.mitte.listree.data
 
 import android.content.Context
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import com.mitte.listree.ui.models.TreeList as UiShoppingList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -11,8 +12,19 @@ class LisTreeRepository(context: Context) {
 
     private val shoppingDao = LisTreeDatabase.getDatabase(context).lisTreeDao()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun getShoppingLists(showDeleted: Boolean): Flow<List<ShoppingListWithItems>> {
-        return shoppingDao.getShoppingLists().flatMapLatest { lists ->
+        val listsFlow = if (showDeleted) {
+            shoppingDao.getShoppingListsWithDeleted()
+        } else {
+            shoppingDao.getShoppingLists()
+        }
+
+        return listsFlow.flatMapLatest { lists ->
+            if (lists.isEmpty()) {
+                return@flatMapLatest flowOf(emptyList())
+            }
+
             val itemFlows = lists.map { list ->
                 if (showDeleted) {
                     shoppingDao.getShoppingItemsWithDeleted(list.id)
@@ -21,18 +33,9 @@ class LisTreeRepository(context: Context) {
                 }
             }
 
-            // When there are no item flows, emit the lists with empty items directly.
-            if (itemFlows.isEmpty()) {
-                flowOf(lists.map { ShoppingListWithItems(it, emptyList()) })
-            } else {
-                // Combine the flows of items for all lists into a single flow of a list of items.
-                combine(itemFlows) { itemsArray ->
-                    lists.map { list ->
-                        // Find the corresponding items for the current list.
-                        // This assumes the order of lists and itemsArray is consistent.
-                        val listItems = itemsArray.firstOrNull { it.isNotEmpty() && it.first().listId == list.id } ?: emptyList()
-                        ShoppingListWithItems(list, listItems)
-                    }
+            combine(itemFlows) { itemsArrays ->
+                lists.mapIndexed { index, list ->
+                    ShoppingListWithItems(list, itemsArrays[index])
                 }
             }
         }
@@ -74,9 +77,5 @@ class LisTreeRepository(context: Context) {
         list.subLists?.forEach { subList ->
             saveListRecursively(subList, list.id)
         }
-    }
-
-    suspend fun removeItem(itemId: String) {
-        shoppingDao.removeItem(itemId, System.currentTimeMillis())
     }
 }
