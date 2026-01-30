@@ -13,15 +13,17 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface LisTreeDao {
 
-    @Transaction
     @Query("SELECT * FROM shopping_lists ORDER BY `order` ASC")
-    fun getShoppingListsWithItems(): Flow<List<ShoppingListWithItems>>
+    fun getShoppingLists(): Flow<List<LisTreeList>>
 
     @Query("SELECT * FROM shopping_lists WHERE parentId = :listId ORDER BY `order` ASC")
     fun getSubLists(listId: String): Flow<List<LisTreeList>>
 
-    @Query("SELECT * FROM shopping_items WHERE listId = :listId ORDER BY `order` ASC")
+    @Query("SELECT * FROM shopping_items WHERE listId = :listId AND deleted = 0 ORDER BY `order` ASC")
     fun getShoppingItems(listId: String): Flow<List<LisTreeItem>>
+
+    @Query("SELECT * FROM shopping_items WHERE listId = :listId ORDER BY `order` ASC")
+    fun getShoppingItemsWithDeleted(listId: String): Flow<List<LisTreeItem>>
 
     @Upsert
     suspend fun upsertShoppingList(list: LisTreeList)

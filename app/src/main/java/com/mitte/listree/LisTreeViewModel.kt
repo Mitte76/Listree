@@ -52,7 +52,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
 
     private fun loadLists() {
         viewModelScope.launch {
-            val allListsWithItems = repository.getShoppingLists().first()
+            val allListsWithItems = repository.getShoppingLists(_showDeleted.value).first()
             val allUiLists = allListsWithItems.map { dataListWithItems ->
                 val dataList = dataListWithItems.lisTreeList
                 val uiItems = dataListWithItems.items.map { dataItem ->
@@ -481,7 +481,6 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
 
             if (oldParentId == newParentId) return@update currentLists // Nothing to do
 
-            // --- REMOVAL STEP ---
             val listRemovedTree = if (oldParentId == null) {
                 currentLists.filterNot { it.id == listId }
                     .mapIndexed { index, list -> list.copy(order = index) }
@@ -500,7 +499,6 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 removeRecursively(currentLists)
             }
 
-            // --- ADDITION STEP ---
             val listAddedTree = if (newParentId == null) {
                 val newOrder = listRemovedTree.size
                 listRemovedTree + listToMove.copy(parentId = null, order = newOrder)
