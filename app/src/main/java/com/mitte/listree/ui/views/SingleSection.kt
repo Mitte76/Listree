@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mitte.listree.LisTreeViewModel
 import com.mitte.listree.R
+import com.mitte.listree.ui.models.ListContent
+import com.mitte.listree.ui.models.ListItem
 import com.mitte.listree.ui.models.TreeList
 import com.mitte.listree.ui.theme.LisTreeTheme
 import kotlin.coroutines.cancellation.CancellationException
@@ -62,6 +64,20 @@ fun SingleSection(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var showMenu by remember { mutableStateOf(false) }
+
+    fun countAllItems(items: List<ListContent>): Int {
+        var count = 0
+        for (item in items) {
+            if (!item.deleted || showDeleted) {
+                if (item is ListItem) {
+                    count++
+                } else if (item is TreeList) {
+                    count += countAllItems(item.children)
+                }
+            }
+        }
+        return count
+    }
 
     Surface(
         shape = CardDefaults.shape,
@@ -108,8 +124,8 @@ fun SingleSection(
                         Text(
                             text = pluralStringResource(
                                 R.plurals.item_count,
-                                list.items?.count { !it.deleted || showDeleted } ?: 0,
-                                list.items?.count { !it.deleted || showDeleted } ?: 0
+                                countAllItems(list.children),
+                                countAllItems(list.children)
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = LisTreeTheme.colors.listMetaCount

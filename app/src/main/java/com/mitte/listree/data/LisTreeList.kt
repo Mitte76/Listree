@@ -4,12 +4,9 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Relation
+import com.mitte.listree.ui.models.ListType
 import java.util.UUID
 
-enum class ListType {
-    ITEM_LIST,
-    GROUP_LIST
-}
 
 @Entity(tableName = "shopping_lists")
 data class LisTreeList(

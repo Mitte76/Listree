@@ -135,8 +135,8 @@ fun GroupSection(
                         Text(
                             text = pluralStringResource(
                                 R.plurals.item_count,
-                                list.subLists?.size ?: 0,
-                                list.subLists?.size ?: 0
+                                list.children.size,
+                                list.children.size
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = LisTreeTheme.colors.listMetaCount
@@ -212,7 +212,7 @@ fun GroupSection(
         AnimatedVisibility(list.isExpanded) {
             Column {
                 ReorderableColumn(
-                    list = list.subLists?.filter { !it.deleted || showDeleted } ?: emptyList(),
+                    list = list.children.filter { !it.deleted || showDeleted }.filterIsInstance<TreeList>(),
                     onSettle = { from, to ->
                         viewModel.moveSubList(list.id, from, to)
                     },

@@ -189,33 +189,6 @@ fun ComponentThemeEditorScreen(
                             )
                         }
 
-                        "headerItem" -> {
-                            HeaderItem(
-                                reorderableState = reorderableState,
-                                item = ListItem(id = "5", name = "Header Item", isHeader = true),
-                                density = LocalDensity.current,
-                                onEditItem = {},
-                                viewModel = dummyViewModel,
-                                listId = "4",
-                            )
-                        }
-
-                        "headerItemDeleted" -> {
-                            HeaderItem(
-                                reorderableState = reorderableState,
-                                item = ListItem(
-                                    id = "5",
-                                    name = "Deleted Header Item",
-                                    isHeader = true,
-                                    deleted = true
-                                ),
-                                density = LocalDensity.current,
-                                onEditItem = {},
-                                viewModel = dummyViewModel,
-                                listId = "4",
-                            )
-                        }
-
                         "normalItem", "normalItemChecked" -> {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,

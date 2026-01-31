@@ -166,34 +166,7 @@ fun ThemeEditorContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Header Item")
             }
-            item {
-                HeaderItem(
-                    reorderableState = reorderableState,
-                    item = ListItem(id = "5", name = "Header Item", isHeader = true),
-                    density = LocalDensity.current,
-                    onEditItem = {},
-                    viewModel = dummyViewModel,
-                    listId = "4",
-                    onTap = {
-                        Log.d("ThemeEditor", "HeaderItem clicked")
-                        navController.navigate("componentThemeEditor/headerItem")
-                    }
-                )
-            }
-            item {
-                HeaderItem(
-                    reorderableState = reorderableState,
-                    item = ListItem(id = "5", name = "Deleted Header Item", isHeader = true, deleted = true),
-                    density = LocalDensity.current,
-                    onEditItem = {},
-                    viewModel = dummyViewModel,
-                    listId = "4",
-                    onTap = {
-                        Log.d("ThemeEditor", "HeaderItemDeleted clicked")
-                        navController.navigate("componentThemeEditor/headerItemDeleted")
-                    }
-                )
-            }
+
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Normal/Checked Item")

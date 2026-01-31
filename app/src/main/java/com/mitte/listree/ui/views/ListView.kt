@@ -7,6 +7,7 @@ import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -29,7 +30,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -39,6 +39,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
@@ -72,6 +74,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,6 +90,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -102,6 +106,7 @@ import com.mitte.listree.ui.models.ListItem
 import com.mitte.listree.ui.models.TreeList
 import com.mitte.listree.ui.theme.LisTreeTheme
 import kotlinx.coroutines.delay
+import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -122,18 +127,17 @@ fun ListView(
     fun findListById(lists: List<TreeList>, id: String): TreeList? {
         for (list in lists) {
             if (list.id == id) return list
-            val found = findListById(list.subLists ?: emptyList(), id)
+            val found = findListById(list.children.filterIsInstance<TreeList>(), id)
             if (found != null) return found
         }
         return null
     }
 
     val currentList = findListById(allLists, listId)
-        ?: TreeList(id = listId, name = stringResource(R.string.not_found), items = emptyList())
-    val items = currentList.items?.filter { !it.deleted || showDeleted }?.sortedBy { it.order }
-        ?: emptyList()
+        ?: TreeList(id = listId, name = stringResource(R.string.not_found), children = emptyList())
+    val items = currentList.children.filter { !it.deleted || showDeleted }.sortedBy { it.order }
 
-    var showAddItemDialog by remember { mutableStateOf(false) }
+    var listIdForNewItem by remember { mutableStateOf<String?>(null) }
     var itemToEdit by remember { mutableStateOf<ListItem?>(null) }
     var itemsPendingDeletion by remember {
         mutableStateOf<Map<String, SwipeToDismissBoxValue>>(
@@ -169,7 +173,7 @@ fun ListView(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddItemDialog = true },
+                onClick = { listIdForNewItem = listId },
                 containerColor = LisTreeTheme.colors.topAppBarContainer
             ) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_item))
@@ -178,13 +182,14 @@ fun ListView(
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
 
-        if (showAddItemDialog) {
+        if (listIdForNewItem != null) {
             AddItemDialog(
-                onDismissRequest = { showAddItemDialog = false },
+                onDismissRequest = { listIdForNewItem = null },
                 onConfirm = { itemName, isHeader ->
-                    viewModel.addItem(listId, itemName, isHeader)
-                    showAddItemDialog = false
-                }
+                    viewModel.addItem(listIdForNewItem!!, itemName, isHeader)
+                    listIdForNewItem = null
+                },
+                showIsHeaderCheckbox = listIdForNewItem == listId // Only show for top-level list
             )
         }
 
@@ -212,49 +217,49 @@ fun ListView(
                 items = items,
                 key = { item -> item.id }
             ) { item ->
-                val swipeDirection = itemsPendingDeletion[item.id]
-                LaunchedEffect(swipeDirection, item.id) {
-                    if (swipeDirection != null) {
-                        delay(2500)
-                        if (itemsPendingDeletion.containsKey(item.id)) {
-                            viewModel.removeItem(listId, item)
-                            itemsPendingDeletion = itemsPendingDeletion - item.id
+                when (item) {
+                    is ListItem -> {
+                        val swipeDirection = itemsPendingDeletion[item.id]
+                        LaunchedEffect(swipeDirection, item.id) {
+                            if (swipeDirection != null) {
+                                delay(2500)
+                                if (itemsPendingDeletion.containsKey(item.id)) {
+                                    viewModel.removeItem(listId, item.id)
+                                    itemsPendingDeletion = itemsPendingDeletion - item.id
+                                }
+                            }
                         }
+
+
+                        NormalItem(
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            reorderableState = reorderableState,
+                            item = item,
+                            swipeDirection = swipeDirection,
+                            density = density,
+                            itemHeights = itemHeights,
+                            viewModel = viewModel,
+                            listId = listId,
+                            onEditItem = { selectedItem ->
+                                itemToEdit = selectedItem
+                            },
+                            onStartPendingDelete = { direction ->
+                                itemsPendingDeletion = itemsPendingDeletion + (item.id to direction)
+                            },
+                            onUndoPendingDelete = {
+                                itemsPendingDeletion = itemsPendingDeletion - item.id
+                            },
+                        )
                     }
-                }
 
-                if (item.isHeader) {
-                    HeaderItem(
-                        reorderableState = reorderableState,
-                        item = item,
-                        density = density,
-                        onEditItem = { selectedItem ->
-                            itemToEdit = selectedItem
-                        },
-                        viewModel = viewModel,
-                        listId = listId,
-                    )
-
-                } else {
-
-                    NormalItem(
-                        reorderableState = reorderableState,
-                        item = item,
-                        swipeDirection = swipeDirection,
-                        density = density,
-                        itemHeights = itemHeights,
-                        viewModel = viewModel,
-                        listId = listId,
-                        onEditItem = { selectedItem ->
-                            itemToEdit = selectedItem
-                        },
-                        onStartPendingDelete = { direction ->
-                            itemsPendingDeletion = itemsPendingDeletion + (item.id to direction)
-                        },
-                        onUndoPendingDelete = {
-                            itemsPendingDeletion = itemsPendingDeletion - item.id
-                        },
-                    )
+                    is TreeList -> {
+                        ExpandableItemList(
+                            list = item,
+                            viewModel = viewModel,
+                            reorderableState = reorderableState,
+                            onAddItem = { listIdForNewItem = it }
+                        )
+                    }
                 }
             }
             item {
@@ -264,143 +269,223 @@ fun ListView(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LazyItemScope.HeaderItem(
-    reorderableState: ReorderableLazyListState,
-    item: ListItem,
-    density: Density,
-    onEditItem: (ListItem) -> Unit,
+private fun LazyItemScope.ExpandableItemList(
+    list: TreeList,
     viewModel: LisTreeViewModel,
-    listId: String,
-    onTap: (() -> Unit)? = null,
+    reorderableState: ReorderableLazyListState,
+    onAddItem: (String) -> Unit
 ) {
-    ReorderableItem(reorderableState, key = item.id) { isDragging ->
+    val interactionSource = remember { MutableInteractionSource() }
+    var showMenu by remember { mutableStateOf(false) }
 
-        val interactionSource = remember { MutableInteractionSource() }
-        var showMenu by remember { mutableStateOf(false) }
-        var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
+    ReorderableItem(
+        reorderableState,
+        key = list.id,
+        modifier = Modifier.padding(horizontal = 8.dp)
+    ) { isDragging ->
 
         val elevation by animateDpAsState(
             if (isDragging) 8.dp else 2.dp,
             label = "elevation"
         )
 
-        Surface(
-            color = if (item.deleted) LisTreeTheme.colors.headerItemDeletedContainer else LisTreeTheme.colors.headerItemContainer,
-            contentColor = if (item.deleted) LisTreeTheme.colors.headerItemDeletedContent else LisTreeTheme.colors.headerItemContent,
-            shadowElevation = elevation,
-            modifier = Modifier
-                .alpha(if (item.deleted) 0.6f else 1f)
-                .indication(interactionSource, ripple())
-                .pointerInput(item.deleted) {
-                    detectTapGestures(
-                        onPress = { offset ->
-                            val press = PressInteraction.Press(offset)
-                            interactionSource.emit(press)
-                            try {
-                                awaitRelease()
-                                interactionSource.emit(
-                                    PressInteraction.Release(
-                                        press
-                                    )
-                                )
-                            } catch (_: CancellationException) {
-                                interactionSource.emit(PressInteraction.Cancel(press))
+        Column {
+
+            Surface(
+                shape = CardDefaults.shape,
+                color = if (list.deleted) LisTreeTheme.colors.groupCardDeletedContainer else LisTreeTheme.colors.groupCardContainer,
+                contentColor = if (list.deleted) LisTreeTheme.colors.groupCardDeletedContent else LisTreeTheme.colors.groupCardContent,
+                shadowElevation = elevation,
+                modifier = Modifier
+                    .indication(interactionSource, ripple())
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onPress = { offset ->
+                                val press = PressInteraction.Press(offset)
+                                interactionSource.emit(press)
+                                try {
+                                    awaitRelease()
+                                    interactionSource.emit(PressInteraction.Release(press))
+                                } catch (_: CancellationException) {
+                                    interactionSource.emit(PressInteraction.Cancel(press))
+                                }
+                            },
+                            onTap = {
+                                viewModel.toggleExpanded(list.id)
                             }
-                        },
-                        onTap = { onTap?.invoke() },
-                        onLongPress = { offset ->
-                            if (onTap == null) {
-                                showMenu = true
-                                pressOffset = with(density) {
-                                    DpOffset(
-                                        offset.x.toDp(),
-                                        offset.y.toDp()
-                                    )
+                        )
+                    },
+            ) {
+                Box {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(vertical = 8.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (list.isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .padding(bottom = 2.dp)
+                            )
+
+                            Text(
+                                text = list.name,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = pluralStringResource(
+                                    R.plurals.item_count,
+                                    list.children.size,
+                                    list.children.size
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = LisTreeTheme.colors.listMetaCount
+                            )
+                        }
+                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                            if (list.deleted) {
+                                Box(modifier = Modifier.padding(end = 8.dp)) {
+
+                                    IconButton(
+                                        onClick = { viewModel.undeleteList(list.id) },
+                                        modifier = Modifier
+                                            .height(30.dp)
+                                            .width(30.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Restore,
+                                            contentDescription = stringResource(
+                                                R.string.restore_item,
+                                                list.name
+                                            )
+                                        )
+                                    }
+                                }
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(
+                                        onClick = { onAddItem(list.id) },
+                                        modifier = Modifier
+                                            .height(30.dp)
+                                            .width(30.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = stringResource(
+                                                R.string.item_settings,
+                                                list.name
+                                            )
+                                        )
+                                    }
+
+                                    Box {
+
+
+                                        IconButton(
+                                            onClick = { showMenu = true },
+                                            modifier = Modifier
+                                                .height(30.dp)
+                                                .width(30.dp),
+                                        ) {
+                                            Icon(
+                                                Icons.Default.MoreVert,
+                                                contentDescription = stringResource(
+                                                    R.string.item_settings,
+                                                    list.name
+                                                )
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.edit)) },
+                                                onClick = {
+//                                                    onListToEdit(list)
+//                                                    showMenu = false
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.move_to)) },
+                                                onClick = {
+//                                                    onMoveItem(list)
+//                                                    showMenu = false
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.delete)) },
+                                                onClick = {
+                                                    viewModel.deleteList(list.id)
+                                                    showMenu = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                    Box(modifier = Modifier.padding(end = 8.dp)) {
+
+                                        IconButton(
+                                            modifier = Modifier
+                                                .draggableHandle()
+                                                .height(30.dp)
+                                                .width(30.dp),
+                                            onClick = {},
+                                        ) {
+                                            Icon(
+                                                Icons.Rounded.DragHandle,
+                                                contentDescription = "Reorder"
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
-                    )
+                    }
                 }
-        )
-        {
-            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+            }
+            AnimatedVisibility(list.isExpanded) {
+                Column {
+                    ReorderableColumn(
+                        list = list.children.filterIsInstance<ListItem>(),
+                        onSettle = { from, to ->
+                            viewModel.moveSubList(list.id, from, to)
+                        },
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 8.dp)
 
-                Box {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        Text(
-                            text = item.name,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 8.dp)
+                    ) { _, item, isDragging ->
+                        val elevation by animateDpAsState(
+                            if (isDragging) 8.dp else 1.dp,
+                            label = "elevation"
                         )
-                        if (item.deleted) {
-                            IconButton(onClick = { viewModel.undeleteItem(listId, item) }) {
-                                Icon(
-                                    Icons.Default.Restore,
-                                    contentDescription = stringResource(R.string.restore_item, item.name)
+
+                        key(item.id) {
+                            ReorderableItem(reorderableState, key = item.id) {
+                                NormalItem(
+                                    modifier = Modifier.padding(start = 12.dp),
+
+                                    reorderableState = reorderableState,
+                                    item = item,
+                                    swipeDirection = null,
+                                    density = LocalDensity.current,
+                                    itemHeights = remember { mutableStateMapOf() },
+                                    viewModel = viewModel,
+                                    listId = list.id,
+                                    onEditItem = {},
+                                    onStartPendingDelete = {},
+                                    onUndoPendingDelete = {},
                                 )
-                            }
-                        } else {
-                            Box {
-                                IconButton(
-                                    onClick = { showMenu = true },
-                                    modifier = Modifier
-                                        .height(30.dp)
-                                        .width(30.dp),
-                                ) {
-                                    Icon(
-                                        Icons.Default.MoreVert,
-                                        contentDescription = stringResource(
-                                            R.string.item_settings,
-                                            item.name
-                                        )
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = showMenu,
-                                    onDismissRequest = { showMenu = false },
-                                    offset = pressOffset
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.edit)) },
-                                        onClick = {
-                                            onEditItem(item)
-                                            showMenu = false
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.delete)) },
-                                        onClick = {
-                                            viewModel.removeItem(listId, item)
-                                            showMenu = false
-                                        }
-                                    )
-                                }
-                            }
-
-                            Box(modifier = Modifier.padding(end = 8.dp)) {
-                                IconButton(
-                                    modifier = Modifier
-                                        .draggableHandle()
-                                        .height(30.dp)
-                                        .width(30.dp),
-                                    onClick = {},
-
-                                    ) {
-                                    Icon(
-                                        Icons.Rounded.DragHandle,
-                                        contentDescription = stringResource(R.string.reorder),
-                                        modifier = Modifier.size(24.dp)
-
-
-                                    )
-                                }
                             }
                         }
                     }
@@ -414,6 +499,7 @@ fun LazyItemScope.HeaderItem(
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun LazyItemScope.NormalItem(
+    modifier: Modifier = Modifier,
     reorderableState: ReorderableLazyListState,
     item: ListItem,
     swipeDirection: SwipeToDismissBoxValue?,
@@ -433,7 +519,7 @@ fun LazyItemScope.NormalItem(
     ReorderableItem(
         reorderableState,
         key = item.id,
-        modifier = Modifier.padding(start = 8.dp)
+        modifier = modifier
     ) { isDragging ->
         val elevation by animateDpAsState(
             if (isDragging) 8.dp else 2.dp,
@@ -553,7 +639,7 @@ fun LazyItemScope.NormalItem(
                                         } else {
                                             if (!item.deleted) viewModel.toggleChecked(
                                                 listId,
-                                                item
+                                                item.id
                                             )
                                         }
                                     },
@@ -606,7 +692,12 @@ fun LazyItemScope.NormalItem(
                                         Box(modifier = Modifier.padding(end = 8.dp)) {
 
                                             IconButton(
-                                                onClick = { viewModel.undeleteItem(listId, item) },
+                                                onClick = {
+                                                    viewModel.undeleteItem(
+                                                        listId,
+                                                        item.id
+                                                    )
+                                                },
                                                 modifier = Modifier
                                                     .height(30.dp)
                                                     .width(30.dp),
@@ -651,7 +742,7 @@ fun LazyItemScope.NormalItem(
                                                 DropdownMenuItem(
                                                     text = { Text(stringResource(R.string.delete)) },
                                                     onClick = {
-                                                        viewModel.removeItem(listId, item)
+                                                        viewModel.removeItem(listId, item.id)
                                                         showMenu = false
                                                     }
                                                 )
@@ -707,7 +798,8 @@ private fun UndoRow(height: Dp, onUndo: () -> Unit) {
 @Composable
 private fun AddItemDialog(
     onDismissRequest: () -> Unit,
-    onConfirm: (String, Boolean) -> Unit
+    onConfirm: (String, Boolean) -> Unit,
+    showIsHeaderCheckbox: Boolean
 ) {
     var itemName by rememberSaveable { mutableStateOf("") }
     var isHeader by rememberSaveable { mutableStateOf(false) }
@@ -764,9 +856,11 @@ private fun AddItemDialog(
                         }
                     }
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = isHeader, onCheckedChange = { isHeader = it })
-                    Text(stringResource(R.string.is_a_header))
+                if (showIsHeaderCheckbox) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = isHeader, onCheckedChange = { isHeader = it })
+                        Text(stringResource(R.string.is_a_header))
+                    }
                 }
             }
         },

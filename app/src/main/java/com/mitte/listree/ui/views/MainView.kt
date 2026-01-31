@@ -1,3 +1,4 @@
+
 package com.mitte.listree.ui.views
 
 import androidx.compose.animation.core.animateDpAsState
@@ -92,7 +93,7 @@ fun MainView(
     ): List<Pair<TreeList, Int>> {
         return lists.flatMap { list ->
             listOf(Pair(list, depth)) + getFlatShoppingListWithDepth(
-                list.subLists ?: emptyList(), depth + 1
+                list.children.filterIsInstance<TreeList>(), depth + 1
             )
         }
     }
@@ -127,7 +128,7 @@ fun MainView(
                 onDismissRequest = { showAddDialog = false },
                 onConfirm = { listName, isGroup ->
                     if (isGroup) {
-                        viewModel.addGroupList(listName)
+                        viewModel.addGroup(listName)
                     } else {
                         viewModel.addList(listName)
                     }
@@ -157,9 +158,9 @@ fun MainView(
                         parentGroupId = null
                     }, onConfirm = { subListName, isGroup ->
                         if (isGroup) {
-                            viewModel.addSubGroup(id, subListName)
+                            viewModel.addGroup(subListName, id)
                         } else {
-                            viewModel.addSubList(id, subListName)
+                            viewModel.addList(subListName, id)
                         }
                         showAddSubListDialog = false
                         parentGroupId = null
@@ -186,9 +187,7 @@ fun MainView(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            viewModel.moveList(
-                                                listId = list.id, newParentId = null
-                                            )
+                                            viewModel.moveListToNewParent(list.id, null)
                                             closeMoveSheet()
                                         }
                                         .padding(vertical = 12.dp))
@@ -206,9 +205,7 @@ fun MainView(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        viewModel.moveList(
-                                            listId = list.id, newParentId = destination.id
-                                        )
+                                        viewModel.moveListToNewParent(list.id, destination.id)
                                         closeMoveSheet()
                                     }
                                     .padding(
@@ -388,3 +385,4 @@ private fun EditListDialog(
             TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
         })
 }
+

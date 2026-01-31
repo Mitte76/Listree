@@ -5,8 +5,6 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
-import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -19,9 +17,6 @@ interface LisTreeDao {
     @Query("SELECT * FROM shopping_lists ORDER BY `order` ASC")
     fun getShoppingListsWithDeleted(): Flow<List<LisTreeList>>
 
-    @Query("SELECT * FROM shopping_lists WHERE parentId = :listId ORDER BY `order` ASC")
-    fun getSubLists(listId: String): Flow<List<LisTreeList>>
-
     @Query("SELECT * FROM shopping_items WHERE listId = :listId AND deleted = 0 ORDER BY `order` ASC")
     fun getShoppingItems(listId: String): Flow<List<LisTreeItem>>
 
@@ -31,35 +26,14 @@ interface LisTreeDao {
     @Upsert
     suspend fun upsertShoppingList(list: LisTreeList)
 
-    @Update
-    suspend fun updateShoppingList(list: LisTreeList)
-
-    @Delete
-    suspend fun deleteShoppingList(list: LisTreeList)
-
-    @Query("DELETE FROM shopping_lists")
-    suspend fun deleteAllShoppingLists()
-
     @Upsert
     suspend fun upsertShoppingItem(item: LisTreeItem)
 
-    @Update
-    suspend fun updateShoppingItem(item: LisTreeItem)
+    @Query("DELETE FROM shopping_items WHERE deleted = 1")
+    suspend fun deleteMarkedItems()
 
-    @Delete
-    suspend fun deleteShoppingItem(item: LisTreeItem)
-
-    @Query("UPDATE shopping_items SET deleted = 1, lastModified = :timestamp WHERE id = :itemId")
-    suspend fun removeItem(itemId: String, timestamp: Long)
-
-    @Query("UPDATE shopping_lists SET deleted = 0, lastModified = :timestamp WHERE id = :listId")
-    suspend fun undeleteList(listId: String, timestamp: Long)
-
-    @Query("UPDATE shopping_items SET deleted = 0, lastModified = :timestamp WHERE id = :itemId")
-    suspend fun undeleteItem(itemId: String, timestamp: Long)
-
-    @Query("DELETE FROM shopping_items")
-    suspend fun deleteAllShoppingItems()
+    @Query("DELETE FROM shopping_lists WHERE deleted = 1")
+    suspend fun deleteMarkedLists()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertListShare(listShare: ListShare)
