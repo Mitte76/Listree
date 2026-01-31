@@ -74,7 +74,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -107,6 +106,7 @@ import com.mitte.listree.ui.models.TreeList
 import com.mitte.listree.ui.theme.LisTreeTheme
 import kotlinx.coroutines.delay
 import sh.calvin.reorderable.ReorderableColumn
+import sh.calvin.reorderable.ReorderableColumnScope
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -186,7 +186,12 @@ fun ListView(
             AddItemDialog(
                 onDismissRequest = { listIdForNewItem = null },
                 onConfirm = { itemName, isHeader ->
-                    viewModel.addItem(listIdForNewItem!!, itemName, isHeader)
+
+                    if (isHeader) {
+                        viewModel.addList(itemName, listIdForNewItem!!)
+                    } else {
+                        viewModel.addItem(listIdForNewItem!!, itemName, false)
+                    }
                     listIdForNewItem = null
                 },
                 showIsHeaderCheckbox = listIdForNewItem == listId // Only show for top-level list
@@ -220,17 +225,7 @@ fun ListView(
                 when (item) {
                     is ListItem -> {
                         val swipeDirection = itemsPendingDeletion[item.id]
-                        LaunchedEffect(swipeDirection, item.id) {
-                            if (swipeDirection != null) {
-                                delay(2500)
-                                if (itemsPendingDeletion.containsKey(item.id)) {
-                                    viewModel.removeItem(listId, item.id)
-                                    itemsPendingDeletion = itemsPendingDeletion - item.id
-                                }
-                            }
-                        }
-
-
+                        // Call the LazyItemScope extension function
                         NormalItem(
                             modifier = Modifier.padding(horizontal = 8.dp),
                             reorderableState = reorderableState,
@@ -278,6 +273,7 @@ private fun LazyItemScope.ExpandableItemList(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var showMenu by remember { mutableStateOf(false) }
+    var childItemsPendingDeletion by remember { mutableStateOf<Map<String, SwipeToDismissBoxValue>>(emptyMap()) }
 
     ReorderableItem(
         reorderableState,
@@ -465,29 +461,24 @@ private fun LazyItemScope.ExpandableItemList(
                         modifier = Modifier.padding(top = 8.dp)
 
                     ) { _, item, isDragging ->
-                        val elevation by animateDpAsState(
-                            if (isDragging) 8.dp else 1.dp,
-                            label = "elevation"
+                        val swipeDirection = childItemsPendingDeletion[item.id]
+                        NormalItem(
+                            modifier = Modifier.padding(start = 12.dp),
+                            isDragging = isDragging,
+                            item = item,
+                            swipeDirection = swipeDirection,
+                            density = LocalDensity.current,
+                            itemHeights = remember { mutableStateMapOf() },
+                            viewModel = viewModel,
+                            listId = list.id,
+                            onEditItem = {},
+                            onStartPendingDelete = { direction ->
+                                childItemsPendingDeletion = childItemsPendingDeletion + (item.id to direction)
+                            },
+                            onUndoPendingDelete = {
+                                childItemsPendingDeletion = childItemsPendingDeletion - item.id
+                            },
                         )
-
-                        key(item.id) {
-                            ReorderableItem(reorderableState, key = item.id) {
-                                NormalItem(
-                                    modifier = Modifier.padding(start = 12.dp),
-
-                                    reorderableState = reorderableState,
-                                    item = item,
-                                    swipeDirection = null,
-                                    density = LocalDensity.current,
-                                    itemHeights = remember { mutableStateMapOf() },
-                                    viewModel = viewModel,
-                                    listId = list.id,
-                                    onEditItem = {},
-                                    onStartPendingDelete = {},
-                                    onUndoPendingDelete = {},
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -495,6 +486,279 @@ private fun LazyItemScope.ExpandableItemList(
 
     }
 }
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+fun NormalItemContent(
+    modifier: Modifier = Modifier,
+    isDragging: Boolean,
+    item: ListItem,
+    swipeDirection: SwipeToDismissBoxValue?,
+    density: Density,
+    itemHeights: SnapshotStateMap<String, Dp>,
+    viewModel: LisTreeViewModel,
+    listId: String,
+    onEditItem: (ListItem) -> Unit,
+    onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
+    onUndoPendingDelete: () -> Unit,
+    onTap: (() -> Unit)? = null,
+    iconButton: @Composable () -> Unit,
+
+    ) {
+    var showMenu by remember { mutableStateOf(false) }
+    var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
+    val interactionSource = remember { MutableInteractionSource() }
+
+    val elevation by animateDpAsState(
+        if (isDragging) 8.dp else 2.dp,
+        label = "elevation"
+    )
+
+    LaunchedEffect(swipeDirection, item.id) {
+        if (swipeDirection != null) {
+            delay(2500)
+
+            viewModel.removeItem(listId, item.id)
+            onUndoPendingDelete()
+        }
+    }
+
+    AnimatedContent(
+        targetState = swipeDirection,
+        label = "UndoAnimation",
+        transitionSpec = {
+            if (targetState != null) {
+                val slideDirection =
+                    if (targetState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
+                slideInHorizontally { width -> -width * slideDirection } togetherWith slideOutHorizontally { width -> width * slideDirection }
+            } else {
+                val slideDirection =
+                    if (initialState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
+                slideInHorizontally { width -> width * slideDirection } togetherWith slideOutHorizontally { width -> -width * slideDirection }
+            }
+        }
+    ) { currentDirection ->
+        if (currentDirection != null) {
+            val itemHeight = itemHeights[item.id]
+            if (itemHeight != null) {
+                UndoRow(
+                    height = itemHeight,
+                    onUndo = onUndoPendingDelete
+                )
+            }
+        } else {
+            val dismissState =
+                rememberSwipeToDismissBoxState(positionalThreshold = { distance -> distance * 0.5f })
+
+            SwipeToDismissBox(
+                state = dismissState,
+                onDismiss = { dismissValue ->
+                    when (dismissValue) {
+                        SwipeToDismissBoxValue.StartToEnd -> {
+                            onStartPendingDelete(dismissValue)
+                        }
+
+                        SwipeToDismissBoxValue.EndToStart -> {
+                            onStartPendingDelete(dismissValue)
+                        }
+
+                        SwipeToDismissBoxValue.Settled -> {
+                            // no action
+                        }
+                    }
+                },
+                enableDismissFromStartToEnd = !item.deleted,
+                enableDismissFromEndToStart = !item.deleted,
+                backgroundContent = {
+                    if (!item.deleted) {
+                        val color by animateColorAsState(
+                            targetValue = when (dismissState.dismissDirection) {
+                                SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> LisTreeTheme.colors.undoRowBackground
+
+                                else -> Color.Transparent
+                            }, label = "background color"
+                        )
+                        val scale by animateFloatAsState(
+                            targetValue = if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
+                            label = "icon scale"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CardDefaults.shape)
+                                .background(color)
+                                .padding(horizontal = 20.dp),
+                            contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.delete_item),
+                                tint = Color.White,
+                                modifier = Modifier.scale(scale)
+                            )
+                        }
+                    }
+                }
+            ) {
+                Surface(
+                    shape = CardDefaults.shape,
+                    color = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContainer else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContainer else LisTreeTheme.colors.normalItemContainer,
+                    contentColor = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContent else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContent else LisTreeTheme.colors.normalItemContent,
+                    shadowElevation = elevation,
+                    modifier = modifier
+                        .alpha(if (item.deleted) 0.6f else 1f)
+                        .onSizeChanged { size ->
+                            with(density) {
+                                itemHeights[item.id] = size.height.toDp()
+                            }
+                        }
+                        .indication(interactionSource, ripple())
+                        .pointerInput(item.deleted) {
+                            detectTapGestures(
+                                onPress = { offset ->
+                                    val press = PressInteraction.Press(offset)
+                                    interactionSource.emit(press)
+                                    try {
+                                        awaitRelease()
+                                        interactionSource.emit(
+                                            PressInteraction.Release(
+                                                press
+                                            )
+                                        )
+                                    } catch (_: CancellationException) {
+                                        interactionSource.emit(PressInteraction.Cancel(press))
+                                    }
+                                },
+                                onTap = {
+                                    if (onTap != null) {
+                                        onTap()
+                                    } else {
+                                        if (!item.deleted) viewModel.toggleChecked(
+                                            listId,
+                                            item.id
+                                        )
+                                    }
+                                },
+                                onLongPress = { offset ->
+                                    if (onTap == null) {
+                                        if (!item.deleted) {
+                                            showMenu = true
+                                            pressOffset = with(density) {
+                                                DpOffset(
+                                                    offset.x.toDp(),
+                                                    offset.y.toDp()
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                ) {
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(horizontal = 8.dp, vertical = 8.dp)
+                                            .fillMaxWidth(),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        Text(
+                                            text = item.name,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContent else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContent else LisTreeTheme.colors.normalItemContent
+                                        )
+                                        if (item.isChecked && !item.deleted) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(1.dp)
+                                                    .background(LisTreeTheme.colors.strikethrough)
+                                            )
+                                        }
+                                    }
+                                }
+                                if (item.deleted) {
+                                    Box(modifier = Modifier.padding(end = 8.dp)) {
+
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.undeleteItem(
+                                                    listId,
+                                                    item.id
+                                                )
+                                            },
+                                            modifier = Modifier
+                                                .height(30.dp)
+                                                .width(30.dp),
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Restore,
+                                                contentDescription = stringResource(
+                                                    R.string.restore_item,
+                                                    item.name
+                                                )
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Box {
+                                        IconButton(
+                                            onClick = { showMenu = true },
+                                            modifier = Modifier
+                                                .height(30.dp)
+                                                .width(30.dp),
+                                        ) {
+                                            Icon(
+                                                Icons.Default.MoreVert,
+                                                contentDescription = stringResource(
+                                                    R.string.item_settings,
+                                                    item.name
+                                                )
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false },
+                                            offset = pressOffset
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.edit)) },
+                                                onClick = {
+                                                    onEditItem(item)
+                                                    showMenu = false
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.delete)) },
+                                                onClick = {
+                                                    viewModel.removeItem(listId, item.id)
+                                                    showMenu = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                    Box(modifier = Modifier.padding(end = 8.dp)) {
+
+                                        iconButton()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -512,267 +776,93 @@ fun LazyItemScope.NormalItem(
     onUndoPendingDelete: () -> Unit,
     onTap: (() -> Unit)? = null,
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    var pressOffset by remember { mutableStateOf(DpOffset.Zero) }
-    val interactionSource = remember { MutableInteractionSource() }
-
     ReorderableItem(
         reorderableState,
         key = item.id,
         modifier = modifier
     ) { isDragging ->
-        val elevation by animateDpAsState(
-            if (isDragging) 8.dp else 2.dp,
-            label = "elevation"
-        )
-
-        AnimatedContent(
-            targetState = swipeDirection,
-            label = "UndoAnimation",
-            transitionSpec = {
-                if (targetState != null) {
-                    val slideDirection =
-                        if (targetState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
-                    slideInHorizontally { width -> -width * slideDirection } togetherWith slideOutHorizontally { width -> width * slideDirection }
-                } else {
-                    val slideDirection =
-                        if (initialState == SwipeToDismissBoxValue.StartToEnd) 1 else -1
-                    slideInHorizontally { width -> width * slideDirection } togetherWith slideOutHorizontally { width -> -width * slideDirection }
-                }
-            }
-        ) { currentDirection ->
-            if (currentDirection != null) {
-                val itemHeight = itemHeights[item.id]
-                if (itemHeight != null) {
-                    UndoRow(
-                        height = itemHeight,
-                        onUndo = onUndoPendingDelete
+        NormalItemContent(
+            modifier = Modifier,
+            isDragging = isDragging,
+            item = item,
+            swipeDirection = swipeDirection,
+            density = density,
+            itemHeights = itemHeights,
+            viewModel = viewModel,
+            listId = listId,
+            onEditItem = onEditItem,
+            onStartPendingDelete = onStartPendingDelete,
+            onUndoPendingDelete = onUndoPendingDelete,
+            onTap = onTap,
+            iconButton = {
+                IconButton(
+                    modifier = Modifier
+                        .draggableHandle()
+                        .height(30.dp)
+                        .width(30.dp),
+                    onClick = {},
+                ) {
+                    Icon(
+                        Icons.Rounded.DragHandle,
+                        contentDescription = stringResource(R.string.reorder)
                     )
                 }
-            } else {
-                val dismissState =
-                    rememberSwipeToDismissBoxState(positionalThreshold = { distance -> distance * 0.5f })
-
-                SwipeToDismissBox(
-                    state = dismissState,
-                    onDismiss = { dismissValue ->
-                        when (dismissValue) {
-                            SwipeToDismissBoxValue.StartToEnd -> {
-                                onStartPendingDelete(dismissValue)
-                            }
-
-                            SwipeToDismissBoxValue.EndToStart -> {
-                                onStartPendingDelete(dismissValue)
-                            }
-
-                            SwipeToDismissBoxValue.Settled -> {
-                                // no action
-                            }
-                        }
-                    },
-                    enableDismissFromStartToEnd = !item.deleted,
-                    enableDismissFromEndToStart = !item.deleted,
-                    backgroundContent = {
-                        if (!item.deleted) {
-                            val color by animateColorAsState(
-                                targetValue = when (dismissState.dismissDirection) {
-                                    SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.StartToEnd -> LisTreeTheme.colors.undoRowBackground
-
-                                    else -> Color.Transparent
-                                }, label = "background color"
-                            )
-                            val scale by animateFloatAsState(
-                                targetValue = if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
-                                label = "icon scale"
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CardDefaults.shape)
-                                    .background(color)
-                                    .padding(horizontal = 20.dp),
-                                contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.delete_item),
-                                    tint = Color.White,
-                                    modifier = Modifier.scale(scale)
-                                )
-                            }
-                        }
-                    }
-                ) {
-                    Surface(
-                        shape = CardDefaults.shape,
-                        color = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContainer else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContainer else LisTreeTheme.colors.normalItemContainer,
-                        contentColor = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContent else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContent else LisTreeTheme.colors.normalItemContent,
-                        shadowElevation = elevation,
-                        modifier = Modifier
-                            .alpha(if (item.deleted) 0.6f else 1f)
-                            .onSizeChanged { size ->
-                                with(density) {
-                                    itemHeights[item.id] = size.height.toDp()
-                                }
-                            }
-                            .indication(interactionSource, ripple())
-                            .pointerInput(item.deleted) {
-                                detectTapGestures(
-                                    onPress = { offset ->
-                                        val press = PressInteraction.Press(offset)
-                                        interactionSource.emit(press)
-                                        try {
-                                            awaitRelease()
-                                            interactionSource.emit(
-                                                PressInteraction.Release(
-                                                    press
-                                                )
-                                            )
-                                        } catch (_: CancellationException) {
-                                            interactionSource.emit(PressInteraction.Cancel(press))
-                                        }
-                                    },
-                                    onTap = {
-                                        if (onTap != null) {
-                                            onTap()
-                                        } else {
-                                            if (!item.deleted) viewModel.toggleChecked(
-                                                listId,
-                                                item.id
-                                            )
-                                        }
-                                    },
-                                    onLongPress = { offset ->
-                                        if (onTap == null) {
-                                            if (!item.deleted) {
-                                                showMenu = true
-                                                pressOffset = with(density) {
-                                                    DpOffset(
-                                                        offset.x.toDp(),
-                                                        offset.y.toDp()
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                    ) {
-                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                Row(
-                                    modifier = Modifier.padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Box(
-                                            modifier = Modifier
-                                                .padding(horizontal = 8.dp, vertical = 8.dp)
-                                                .fillMaxWidth(),
-                                            contentAlignment = Alignment.CenterStart
-                                        ) {
-                                            Text(
-                                                text = item.name,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                color = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContent else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContent else LisTreeTheme.colors.normalItemContent
-                                            )
-                                            if (item.isChecked && !item.deleted) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(1.dp)
-                                                        .background(LisTreeTheme.colors.strikethrough)
-                                                )
-                                            }
-                                        }
-                                    }
-                                    if (item.deleted) {
-                                        Box(modifier = Modifier.padding(end = 8.dp)) {
-
-                                            IconButton(
-                                                onClick = {
-                                                    viewModel.undeleteItem(
-                                                        listId,
-                                                        item.id
-                                                    )
-                                                },
-                                                modifier = Modifier
-                                                    .height(30.dp)
-                                                    .width(30.dp),
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.Restore,
-                                                    contentDescription = stringResource(
-                                                        R.string.restore_item,
-                                                        item.name
-                                                    )
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        Box {
-                                            IconButton(
-                                                onClick = { showMenu = true },
-                                                modifier = Modifier
-                                                    .height(30.dp)
-                                                    .width(30.dp),
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.MoreVert,
-                                                    contentDescription = stringResource(
-                                                        R.string.item_settings,
-                                                        item.name
-                                                    )
-                                                )
-                                            }
-                                            DropdownMenu(
-                                                expanded = showMenu,
-                                                onDismissRequest = { showMenu = false },
-                                                offset = pressOffset
-                                            ) {
-                                                DropdownMenuItem(
-                                                    text = { Text(stringResource(R.string.edit)) },
-                                                    onClick = {
-                                                        onEditItem(item)
-                                                        showMenu = false
-                                                    }
-                                                )
-                                                DropdownMenuItem(
-                                                    text = { Text(stringResource(R.string.delete)) },
-                                                    onClick = {
-                                                        viewModel.removeItem(listId, item.id)
-                                                        showMenu = false
-                                                    }
-                                                )
-                                            }
-                                        }
-                                        Box(modifier = Modifier.padding(end = 8.dp)) {
-
-                                            IconButton(
-                                                modifier = Modifier
-                                                    .draggableHandle()
-                                                    .height(30.dp)
-                                                    .width(30.dp),
-                                                onClick = {},
-                                            ) {
-                                                Icon(
-                                                    Icons.Rounded.DragHandle,
-                                                    contentDescription = stringResource(R.string.reorder)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
-        }
+        )
     }
 }
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+fun ReorderableColumnScope.NormalItem(
+    modifier: Modifier = Modifier,
+    isDragging: Boolean,
+    item: ListItem,
+    swipeDirection: SwipeToDismissBoxValue?,
+    density: Density,
+    itemHeights: SnapshotStateMap<String, Dp>,
+    viewModel: LisTreeViewModel,
+    listId: String,
+    onEditItem: (ListItem) -> Unit,
+    onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
+    onUndoPendingDelete: () -> Unit,
+    onTap: (() -> Unit)? = null,
+) {
+
+    ReorderableItem() {
+        NormalItemContent(
+            modifier = modifier,
+            isDragging = isDragging,
+            item = item,
+            swipeDirection = swipeDirection,
+            density = density,
+            itemHeights = itemHeights,
+            viewModel = viewModel,
+            listId = listId,
+            onEditItem = onEditItem,
+            onStartPendingDelete = onStartPendingDelete,
+            onUndoPendingDelete = onUndoPendingDelete,
+            onTap = onTap,
+            iconButton = {
+                IconButton(
+                    modifier = Modifier
+                        .draggableHandle()
+                        .height(30.dp)
+                        .width(30.dp),
+                    onClick = {},
+                ) {
+                    Icon(
+                        Icons.Rounded.DragHandle,
+                        contentDescription = stringResource(R.string.reorder)
+                    )
+                }
+            }
+        )
+
+
+    }
+}
+
 
 @Composable
 private fun UndoRow(height: Dp, onUndo: () -> Unit) {
