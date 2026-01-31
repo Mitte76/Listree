@@ -1,4 +1,3 @@
-
 package com.mitte.listree.ui.views
 
 import androidx.compose.animation.core.animateDpAsState
@@ -6,7 +5,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,24 +13,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.DragHandle
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -43,10 +35,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.mitte.listree.LisTreeViewModel
@@ -54,6 +44,9 @@ import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListType
 import com.mitte.listree.ui.models.TreeList
 import com.mitte.listree.ui.theme.LisTreeTheme
+import com.mitte.listree.ui.views.dialogs.AddListDialog
+import com.mitte.listree.ui.views.dialogs.AddSubListDialog
+import com.mitte.listree.ui.views.dialogs.EditListDialog
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -100,28 +93,28 @@ fun MainView(
 
     Scaffold(
         topBar = {
-        TopAppBar(
-            title = { Text(stringResource(R.string.app_name)) },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = LisTreeTheme.colors.topAppBarContainer,
-                titleContentColor = LisTreeTheme.colors.topAppBarTitle
-            ),
-            actions = {
-                IconButton(onClick = { navController.navigate("settings") }) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = stringResource(R.string.settings_title)
-                    )
-                }
-            })
-    }, floatingActionButton = {
-        FloatingActionButton(
-            onClick = { showAddDialog = true },
-            containerColor = LisTreeTheme.colors.topAppBarContainer
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_list))
-        }
-    }, modifier = Modifier.fillMaxSize()
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = LisTreeTheme.colors.topAppBarContainer,
+                    titleContentColor = LisTreeTheme.colors.topAppBarTitle
+                ),
+                actions = {
+                    IconButton(onClick = { navController.navigate("settings") }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings_title)
+                        )
+                    }
+                })
+        }, floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = LisTreeTheme.colors.topAppBarContainer
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_list))
+            }
+        }, modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         if (showAddDialog) {
             AddListDialog(
@@ -280,109 +273,5 @@ fun MainView(
     }
 }
 
-@Composable
-private fun AddListDialog(
-    onDismissRequest: () -> Unit, onConfirm: (String, Boolean) -> Unit
-) {
-    var listName by rememberSaveable { mutableStateOf("") }
-    var isGroup by rememberSaveable { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(R.string.create_new_list)) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = listName,
-                    onValueChange = { listName = it },
-                    label = { Text(stringResource(R.string.list_name)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = isGroup, onCheckedChange = { isGroup = it })
-                    Text(stringResource(R.string.is_a_group))
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (listName.isNotBlank()) onConfirm(listName, isGroup) },
-                enabled = listName.isNotBlank()
-            ) {
-                Text(stringResource(R.string.create))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
-        })
-}
 
-@Composable
-private fun AddSubListDialog(
-    onDismissRequest: () -> Unit, onConfirm: (String, Boolean) -> Unit
-) {
-    var listName by rememberSaveable { mutableStateOf("") }
-    var isGroup by rememberSaveable { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(R.string.create_new_sub_list)) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = listName,
-                    onValueChange = { listName = it },
-                    label = { Text(stringResource(R.string.list_name)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = isGroup, onCheckedChange = { isGroup = it })
-                    Text(stringResource(R.string.is_a_group))
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (listName.isNotBlank()) onConfirm(listName, isGroup) },
-                enabled = listName.isNotBlank()
-            ) {
-                Text(stringResource(R.string.create))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
-        })
-}
-
-@Composable
-private fun EditListDialog(
-    list: TreeList, onDismissRequest: () -> Unit, onConfirm: (String) -> Unit
-) {
-    var listName by rememberSaveable(list) { mutableStateOf(list.name) }
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(R.string.edit_list_name)) },
-        text = {
-            OutlinedTextField(
-                value = listName,
-                onValueChange = { listName = it },
-                label = { Text(stringResource(R.string.list_name)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (listName.isNotBlank()) onConfirm(listName) },
-                enabled = listName.isNotBlank()
-            ) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
-        })
-}
 

@@ -48,7 +48,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
     fun setShowDeleted(show: Boolean) {
         preferencesManager.setShowDeleted(show)
         _showDeleted.value = show
-        loadLists() // Reload to apply filter
+        loadLists()
     }
 
     private fun loadLists() {
@@ -328,7 +328,13 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             if (list.id == listId) {
                 list.copy(deleted = true, lastModified = System.currentTimeMillis())
             } else {
-                list.copy(children = (list.children.filterIsInstance<ListItem>()) + mapAndDeleteList(list.children.filterIsInstance<TreeList>(), listId))
+                list.copy(children = list.children.map { child ->
+                    when (child) {
+                        is TreeList -> mapAndDeleteList(listOf(child), listId).first()
+                        is ListItem -> child
+                        else -> child
+                    }
+                })
             }
         }
     }
@@ -345,7 +351,13 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             if (list.id == listId) {
                 list.copy(deleted = false, lastModified = System.currentTimeMillis())
             } else {
-                list.copy(children = (list.children.filterIsInstance<ListItem>()) + mapAndUndeleteList(list.children.filterIsInstance<TreeList>(), listId))
+                list.copy(children = list.children.map { child ->
+                    when (child) {
+                        is TreeList -> mapAndUndeleteList(listOf(child), listId).first()
+                        is ListItem -> child
+                        else -> child
+                    }
+                })
             }
         }
     }
@@ -366,7 +378,13 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             if (list.id == listId) {
                 list.copy(name = newName.trim(), lastModified = System.currentTimeMillis())
             } else {
-                list.copy(children = mapAndEditListName(list.children.filterIsInstance<TreeList>(), listId, newName))
+                list.copy(children = list.children.map { child ->
+                    when (child) {
+                        is TreeList -> mapAndEditListName(listOf(child), listId, newName).first()
+                        is ListItem -> child
+                        else -> child
+                    }
+                })
             }
         }
     }

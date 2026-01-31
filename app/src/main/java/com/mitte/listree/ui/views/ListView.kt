@@ -1,11 +1,5 @@
 package com.mitte.listree.ui.views
 
-import android.app.Activity
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.speech.RecognizerIntent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -35,21 +29,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.DragHandle
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,13 +47,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -77,12 +64,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -92,7 +77,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -104,13 +88,15 @@ import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListItem
 import com.mitte.listree.ui.models.TreeList
 import com.mitte.listree.ui.theme.LisTreeTheme
+import com.mitte.listree.ui.views.dialogs.AddItemDialog
+import com.mitte.listree.ui.views.dialogs.EditItemDialog
+import com.mitte.listree.ui.views.dialogs.EditListDialog
 import kotlinx.coroutines.delay
 import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableColumnScope
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -138,7 +124,8 @@ fun ListView(
     val items = currentList.children.filter { !it.deleted || showDeleted }.sortedBy { it.order }
 
     var listIdForNewItem by remember { mutableStateOf<String?>(null) }
-    var itemToEdit by remember { mutableStateOf<ListItem?>(null) }
+    var itemToEdit by remember { mutableStateOf<Pair<String, ListItem>?>(null) }
+    var listToEdit by remember { mutableStateOf<TreeList?>(null) }
     var itemsPendingDeletion by remember {
         mutableStateOf<Map<String, SwipeToDismissBoxValue>>(
             emptyMap()
@@ -182,29 +169,38 @@ fun ListView(
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
 
-        if (listIdForNewItem != null) {
+        listIdForNewItem?.let { id ->
             AddItemDialog(
                 onDismissRequest = { listIdForNewItem = null },
                 onConfirm = { itemName, isHeader ->
 
                     if (isHeader) {
-                        viewModel.addList(itemName, listIdForNewItem!!)
+                        viewModel.addList(itemName, id)
                     } else {
-                        viewModel.addItem(listIdForNewItem!!, itemName, false)
+                        viewModel.addItem(id, itemName, false)
                     }
                     listIdForNewItem = null
                 },
-                showIsHeaderCheckbox = listIdForNewItem == listId // Only show for top-level list
+                showIsHeaderCheckbox = id == listId
             )
         }
-
-        itemToEdit?.let { item ->
+        itemToEdit?.let { (parentId, item) ->
             EditItemDialog(
                 item = item,
                 onDismissRequest = { itemToEdit = null },
                 onConfirm = { newItemName ->
-                    viewModel.editItemName(listId, item.id, newItemName)
+                    viewModel.editItemName(parentId, item.id, newItemName)
                     itemToEdit = null
+                }
+            )
+        }
+        listToEdit?.let { list ->
+            EditListDialog(
+                list = list,
+                onDismissRequest = { listToEdit = null },
+                onConfirm = { newListName ->
+                    viewModel.editListName(list.id, newListName)
+                    listToEdit = null
                 }
             )
         }
@@ -225,7 +221,6 @@ fun ListView(
                 when (item) {
                     is ListItem -> {
                         val swipeDirection = itemsPendingDeletion[item.id]
-                        // Call the LazyItemScope extension function
                         NormalItem(
                             modifier = Modifier.padding(horizontal = 8.dp),
                             reorderableState = reorderableState,
@@ -236,7 +231,8 @@ fun ListView(
                             viewModel = viewModel,
                             listId = listId,
                             onEditItem = { selectedItem ->
-                                itemToEdit = selectedItem
+                                println("onEditItem: $selectedItem")
+                                itemToEdit = listId to selectedItem
                             },
                             onStartPendingDelete = { direction ->
                                 itemsPendingDeletion = itemsPendingDeletion + (item.id to direction)
@@ -252,7 +248,14 @@ fun ListView(
                             list = item,
                             viewModel = viewModel,
                             reorderableState = reorderableState,
-                            onAddItem = { listIdForNewItem = it }
+                            onAddItem = { listIdForNewItem = it },
+//                            onListToEdit = { listToEdit = it }
+                            onEditItem = { itemToEdit = it },
+                            onListToEdit = {
+                                val listToEdit2 = findListById(allLists, it)
+                                println("listToEdit2: $listToEdit2")
+                                listToEdit = findListById(allLists, it)
+                            }
                         )
                     }
                 }
@@ -269,11 +272,17 @@ private fun LazyItemScope.ExpandableItemList(
     list: TreeList,
     viewModel: LisTreeViewModel,
     reorderableState: ReorderableLazyListState,
-    onAddItem: (String) -> Unit
+    onAddItem: (String) -> Unit,
+    onEditItem: (Pair<String, ListItem>) -> Unit,
+    onListToEdit: (String) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     var showMenu by remember { mutableStateOf(false) }
-    var childItemsPendingDeletion by remember { mutableStateOf<Map<String, SwipeToDismissBoxValue>>(emptyMap()) }
+    var childItemsPendingDeletion by remember {
+        mutableStateOf<Map<String, SwipeToDismissBoxValue>>(
+            emptyMap()
+        )
+    }
 
     ReorderableItem(
         reorderableState,
@@ -409,15 +418,8 @@ private fun LazyItemScope.ExpandableItemList(
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.edit)) },
                                                 onClick = {
-//                                                    onListToEdit(list)
-//                                                    showMenu = false
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.move_to)) },
-                                                onClick = {
-//                                                    onMoveItem(list)
-//                                                    showMenu = false
+                                                    onListToEdit(list.id)
+                                                    showMenu = false
                                                 }
                                             )
                                             DropdownMenuItem(
@@ -471,9 +473,12 @@ private fun LazyItemScope.ExpandableItemList(
                             itemHeights = remember { mutableStateMapOf() },
                             viewModel = viewModel,
                             listId = list.id,
-                            onEditItem = {},
+                            onEditItem = { selectedItem ->
+                                onEditItem(list.id to selectedItem)
+                            },
                             onStartPendingDelete = { direction ->
-                                childItemsPendingDeletion = childItemsPendingDeletion + (item.id to direction)
+                                childItemsPendingDeletion =
+                                    childItemsPendingDeletion + (item.id to direction)
                             },
                             onUndoPendingDelete = {
                                 childItemsPendingDeletion = childItemsPendingDeletion - item.id
@@ -483,6 +488,111 @@ private fun LazyItemScope.ExpandableItemList(
                 }
             }
         }
+
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+fun LazyItemScope.NormalItem(
+    modifier: Modifier = Modifier,
+    reorderableState: ReorderableLazyListState,
+    item: ListItem,
+    swipeDirection: SwipeToDismissBoxValue?,
+    density: Density,
+    itemHeights: SnapshotStateMap<String, Dp>,
+    viewModel: LisTreeViewModel,
+    listId: String,
+    onEditItem: (ListItem) -> Unit,
+    onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
+    onUndoPendingDelete: () -> Unit,
+    onTap: (() -> Unit)? = null,
+) {
+    ReorderableItem(
+        reorderableState,
+        key = item.id,
+        modifier = modifier
+    ) { isDragging ->
+        NormalItemContent(
+            modifier = Modifier,
+            isDragging = isDragging,
+            item = item,
+            swipeDirection = swipeDirection,
+            density = density,
+            itemHeights = itemHeights,
+            viewModel = viewModel,
+            listId = listId,
+            onEditItem = onEditItem,
+            onStartPendingDelete = onStartPendingDelete,
+            onUndoPendingDelete = onUndoPendingDelete,
+            onTap = onTap,
+            iconButton = {
+                IconButton(
+                    modifier = Modifier
+                        .draggableHandle()
+                        .height(30.dp)
+                        .width(30.dp),
+                    onClick = {},
+                ) {
+                    Icon(
+                        Icons.Rounded.DragHandle,
+                        contentDescription = stringResource(R.string.reorder)
+                    )
+                }
+            }
+        )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+fun ReorderableColumnScope.NormalItem(
+    modifier: Modifier = Modifier,
+    isDragging: Boolean,
+    item: ListItem,
+    swipeDirection: SwipeToDismissBoxValue?,
+    density: Density,
+    itemHeights: SnapshotStateMap<String, Dp>,
+    viewModel: LisTreeViewModel,
+    listId: String,
+    onEditItem: (ListItem) -> Unit,
+    onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
+    onUndoPendingDelete: () -> Unit,
+    onTap: (() -> Unit)? = null,
+) {
+
+    ReorderableItem() {
+        NormalItemContent(
+            modifier = modifier,
+            isDragging = isDragging,
+            item = item,
+            swipeDirection = swipeDirection,
+            density = density,
+            itemHeights = itemHeights,
+            viewModel = viewModel,
+            listId = listId,
+            onEditItem = {
+                onEditItem(item)
+            },
+            onStartPendingDelete = onStartPendingDelete,
+            onUndoPendingDelete = onUndoPendingDelete,
+            onTap = onTap,
+            iconButton = {
+                IconButton(
+                    modifier = Modifier
+                        .draggableHandle()
+                        .height(30.dp)
+                        .width(30.dp),
+                    onClick = {},
+                ) {
+                    Icon(
+                        Icons.Rounded.DragHandle,
+                        contentDescription = stringResource(R.string.reorder)
+                    )
+                }
+            }
+        )
+
 
     }
 }
@@ -758,111 +868,6 @@ fun NormalItemContent(
     }
 }
 
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-fun LazyItemScope.NormalItem(
-    modifier: Modifier = Modifier,
-    reorderableState: ReorderableLazyListState,
-    item: ListItem,
-    swipeDirection: SwipeToDismissBoxValue?,
-    density: Density,
-    itemHeights: SnapshotStateMap<String, Dp>,
-    viewModel: LisTreeViewModel,
-    listId: String,
-    onEditItem: (ListItem) -> Unit,
-    onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
-    onUndoPendingDelete: () -> Unit,
-    onTap: (() -> Unit)? = null,
-) {
-    ReorderableItem(
-        reorderableState,
-        key = item.id,
-        modifier = modifier
-    ) { isDragging ->
-        NormalItemContent(
-            modifier = Modifier,
-            isDragging = isDragging,
-            item = item,
-            swipeDirection = swipeDirection,
-            density = density,
-            itemHeights = itemHeights,
-            viewModel = viewModel,
-            listId = listId,
-            onEditItem = onEditItem,
-            onStartPendingDelete = onStartPendingDelete,
-            onUndoPendingDelete = onUndoPendingDelete,
-            onTap = onTap,
-            iconButton = {
-                IconButton(
-                    modifier = Modifier
-                        .draggableHandle()
-                        .height(30.dp)
-                        .width(30.dp),
-                    onClick = {},
-                ) {
-                    Icon(
-                        Icons.Rounded.DragHandle,
-                        contentDescription = stringResource(R.string.reorder)
-                    )
-                }
-            }
-        )
-    }
-}
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-fun ReorderableColumnScope.NormalItem(
-    modifier: Modifier = Modifier,
-    isDragging: Boolean,
-    item: ListItem,
-    swipeDirection: SwipeToDismissBoxValue?,
-    density: Density,
-    itemHeights: SnapshotStateMap<String, Dp>,
-    viewModel: LisTreeViewModel,
-    listId: String,
-    onEditItem: (ListItem) -> Unit,
-    onStartPendingDelete: (SwipeToDismissBoxValue) -> Unit,
-    onUndoPendingDelete: () -> Unit,
-    onTap: (() -> Unit)? = null,
-) {
-
-    ReorderableItem() {
-        NormalItemContent(
-            modifier = modifier,
-            isDragging = isDragging,
-            item = item,
-            swipeDirection = swipeDirection,
-            density = density,
-            itemHeights = itemHeights,
-            viewModel = viewModel,
-            listId = listId,
-            onEditItem = onEditItem,
-            onStartPendingDelete = onStartPendingDelete,
-            onUndoPendingDelete = onUndoPendingDelete,
-            onTap = onTap,
-            iconButton = {
-                IconButton(
-                    modifier = Modifier
-                        .draggableHandle()
-                        .height(30.dp)
-                        .width(30.dp),
-                    onClick = {},
-                ) {
-                    Icon(
-                        Icons.Rounded.DragHandle,
-                        contentDescription = stringResource(R.string.reorder)
-                    )
-                }
-            }
-        )
-
-
-    }
-}
-
-
 @Composable
 private fun UndoRow(height: Dp, onUndo: () -> Unit) {
     Row(
@@ -882,157 +887,4 @@ private fun UndoRow(height: Dp, onUndo: () -> Unit) {
             color = LisTreeTheme.colors.undoRowContent
         )
     }
-}
-
-@Composable
-private fun AddItemDialog(
-    onDismissRequest: () -> Unit,
-    onConfirm: (String, Boolean) -> Unit,
-    showIsHeaderCheckbox: Boolean
-) {
-    var itemName by rememberSaveable { mutableStateOf("") }
-    var isHeader by rememberSaveable { mutableStateOf(false) }
-    val voicePrompt = stringResource(R.string.voice_prompt_add)
-
-    val voiceRecognizerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-        onResult = { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data = result.data
-                val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                if (!results.isNullOrEmpty()) {
-                    itemName =
-                        results[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-                }
-            }
-        }
-    )
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(R.string.add_new_item_title)) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = itemName,
-                    onValueChange = { itemName = it },
-                    label = { Text(stringResource(R.string.item_name)) },
-                    singleLine = false,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(
-                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                )
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "sv-SE")
-                                putExtra(
-                                    RecognizerIntent.EXTRA_PROMPT,
-                                    voicePrompt
-                                )
-                            }
-                            try {
-                                voiceRecognizerLauncher.launch(intent)
-                            } catch (_: ActivityNotFoundException) {
-                                println("Voice recognition not available on this device.")
-                            }
-                        }) {
-                            Icon(
-                                Icons.Default.Mic,
-                                contentDescription = stringResource(R.string.voice_input)
-                            )
-                        }
-                    }
-                )
-                if (showIsHeaderCheckbox) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = isHeader, onCheckedChange = { isHeader = it })
-                        Text(stringResource(R.string.is_a_header))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (itemName.isNotBlank()) onConfirm(itemName, isHeader) },
-                enabled = itemName.isNotBlank()
-            ) { Text(stringResource(R.string.add)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
-        }
-    )
-}
-
-@Composable
-private fun EditItemDialog(
-    item: ListItem,
-    onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var itemName by remember { mutableStateOf(item.name) }
-    val voicePrompt = stringResource(R.string.voice_prompt_edit)
-
-    val voiceRecognizerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-        onResult = { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data = result.data
-                val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                if (!results.isNullOrEmpty()) {
-                    itemName =
-                        results[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-                }
-            }
-        }
-    )
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(R.string.edit_item_name)) },
-        text = {
-            OutlinedTextField(
-                value = itemName,
-                onValueChange = { itemName = it },
-                label = { Text(stringResource(R.string.item_name)) },
-                singleLine = false,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                trailingIcon = {
-                    IconButton(onClick = {
-                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                            putExtra(
-                                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                            )
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "sv-SE")
-                            putExtra(
-                                RecognizerIntent.EXTRA_PROMPT,
-                                voicePrompt
-                            )
-                        }
-                        try {
-                            voiceRecognizerLauncher.launch(intent)
-                        } catch (_: ActivityNotFoundException) {
-                            println("Voice recognition not available on this device.")
-                        }
-                    }) {
-                        Icon(
-                            Icons.Default.Mic,
-                            contentDescription = stringResource(R.string.voice_input)
-                        )
-                    }
-                }
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (itemName.isNotBlank()) onConfirm(itemName) },
-                enabled = itemName.isNotBlank()
-            ) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) }
-        }
-    )
 }
