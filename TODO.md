@@ -2,3 +2,5 @@
 - [ ] Implement List sharing through Androids share function
 - [ ] Add search functionality
 - [ ] Add quantity to list items
+- [ ] Add Google Calendar integration
+- [ ] Add ToDo-List
