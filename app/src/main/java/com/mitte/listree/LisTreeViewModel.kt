@@ -328,7 +328,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             if (list.id == listId) {
                 list.copy(deleted = true, lastModified = System.currentTimeMillis())
             } else {
-                list.copy(children = mapAndDeleteList(list.children.filterIsInstance<TreeList>(), listId))
+                list.copy(children = (list.children.filterIsInstance<ListItem>()) + mapAndDeleteList(list.children.filterIsInstance<TreeList>(), listId))
             }
         }
     }
@@ -345,7 +345,7 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             if (list.id == listId) {
                 list.copy(deleted = false, lastModified = System.currentTimeMillis())
             } else {
-                list.copy(children = mapAndUndeleteList(list.children.filterIsInstance<TreeList>(), listId))
+                list.copy(children = (list.children.filterIsInstance<ListItem>()) + mapAndUndeleteList(list.children.filterIsInstance<TreeList>(), listId))
             }
         }
     }
