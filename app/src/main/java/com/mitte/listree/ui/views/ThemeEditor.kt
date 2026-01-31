@@ -164,12 +164,7 @@ fun ThemeEditorContent(
             }
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Header Item")
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Normal/Checked Item")
+                Text("Items")
             }
             item {
                 NormalItem(
@@ -188,10 +183,6 @@ fun ThemeEditorContent(
                         navController.navigate("componentThemeEditor/normalItem")
                     }
                 )
-            }
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Deleted Item")
             }
             item {
                 NormalItem(

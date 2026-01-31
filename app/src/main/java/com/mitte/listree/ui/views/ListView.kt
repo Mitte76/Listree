@@ -607,7 +607,6 @@ fun NormalItemContent(
                     contentColor = if (item.deleted) LisTreeTheme.colors.normalItemDeletedContent else if (item.isChecked) LisTreeTheme.colors.normalItemCheckedContent else LisTreeTheme.colors.normalItemContent,
                     shadowElevation = elevation,
                     modifier = modifier
-                        .alpha(if (item.deleted) 0.6f else 1f)
                         .onSizeChanged { size ->
                             with(density) {
                                 itemHeights[item.id] = size.height.toDp()
