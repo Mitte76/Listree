@@ -142,6 +142,30 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun exportListToText(listId: String): String {
+        val list = getListById(listId) ?: return ""
+
+        fun buildText(content: ListContent, indent: String = ""): String {
+            return when (content) {
+                is TreeList -> {
+                    val builder = StringBuilder()
+                    builder.append(indent)
+                    builder.append("## ${content.name} ##\n")
+                    content.children.forEach { child ->
+                        builder.append(buildText(child, "  $indent"))
+                    }
+                    builder.toString()
+                }
+                is ListItem -> {
+                    val checkbox = if (content.isChecked) "[x]" else "[ ]"
+                    "$indent$checkbox ${content.name}\n"
+                }
+            }
+        }
+
+        return buildText(list)
+    }
+
     fun importData(context: Context, uri: Uri) {
         val gson = Gson()
         try {

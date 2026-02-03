@@ -1,5 +1,7 @@
 package com.mitte.listree.ui.views
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -36,6 +38,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.CardDefaults
@@ -73,6 +76,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -109,6 +113,7 @@ fun ListView(
 ) {
     val allLists by viewModel.treeLists.collectAsState()
     val showDeleted by viewModel.showDeleted.collectAsState()
+    val context = LocalContext.current
 
     fun findListById(lists: List<TreeList>, id: String): TreeList? {
         for (list in lists) {
@@ -140,6 +145,17 @@ fun ListView(
         viewModel.moveItem(listId, from.index, to.index)
     }
 
+    fun shareList(context: Context, listId: String) {
+        val listText = viewModel.exportListToText(listId)
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, listText)
+            type = "text/plain"
+        }
+        val shareIntent = Intent.createChooser(sendIntent, null)
+        context.startActivity(shareIntent)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -149,6 +165,12 @@ fun ListView(
                     titleContentColor = LisTreeTheme.colors.topAppBarTitle
                 ),
                 actions = {
+                    IconButton(onClick = { shareList(context, listId) }) {
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = stringResource(R.string.share_list)
+                        )
+                    }
                     IconButton(onClick = { navController.navigate("settings") }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
