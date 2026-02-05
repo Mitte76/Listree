@@ -4,6 +4,9 @@
     <!-- MainView -->
     <string name="your_lists">Your Lists</string>
     <string name="add_new_list">Add new list</string>
+    <string name="add_new_list_or_group">Add new list or group</string>
+    <string name="list_or_group_name">List or group name</string>
+    <string name="create_as_group">Create as group</string>
     <string name="create_new_list">Create New List</string>
     <string name="create_new_sub_list">Create New Sub-List</string>
     <string name="edit_list_name">Edit List Name</string>
@@ -43,7 +46,8 @@
     <string name="export_confirm_title">Confirm Export</string>
     <string name="export_confirm_text">Do you want to export all your lists to a file?</string>
     <string name="export_success_title">Export Successful</string>
-    <string name="export_success_text">Your data has been saved to:\n%1$s</string>
+    <string name="export_success_text">Your data has been saved to:
+%1$s</string>
     <string name="export_failed_title">Export Failed</string>
     <string name="export_failed_text">Could not save your data.</string>
     <string name="import_data_title">Import data</string>

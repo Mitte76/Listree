@@ -24,6 +24,7 @@ gitignore
 *.keystore
 *.jks
 *.private_key.pepk
+keystore.properties
 
 # =========================================
 # Local native build outputs

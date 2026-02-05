@@ -1,7 +1,5 @@
 package com.mitte.listree.ui.views
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -38,25 +36,19 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -114,6 +106,7 @@ fun ListView(
     val allLists by viewModel.treeLists.collectAsState()
     val showDeleted by viewModel.showDeleted.collectAsState()
     val context = LocalContext.current
+    val listIdForNewItem by viewModel.showAddItemDialog.collectAsState()
 
     fun findListById(lists: List<TreeList>, id: String): TreeList? {
         for (list in lists) {
@@ -128,7 +121,6 @@ fun ListView(
         ?: TreeList(id = listId, name = stringResource(R.string.not_found), children = emptyList())
     val items = currentList.children.filter { !it.deleted || showDeleted }.sortedBy { it.order }
 
-    var listIdForNewItem by remember { mutableStateOf<String?>(null) }
     var itemToEdit by remember { mutableStateOf<Pair<String, ListItem>?>(null) }
     var listToEdit by remember { mutableStateOf<TreeList?>(null) }
     var itemsPendingDeletion by remember {
@@ -145,146 +137,97 @@ fun ListView(
         viewModel.moveItem(listId, from.index, to.index)
     }
 
-    fun shareList(context: Context, listId: String) {
-        val listText = viewModel.exportListToText(listId)
-        val sendIntent: Intent = Intent().apply {
-            action = Intent.ACTION_SEND
-            putExtra(Intent.EXTRA_TEXT, listText)
-            type = "text/plain"
-        }
-        val shareIntent = Intent.createChooser(sendIntent, null)
-        context.startActivity(shareIntent)
+    listIdForNewItem?.let { id ->
+        AddItemDialog(
+            onDismissRequest = { viewModel.onAddItemDialogDismissed() },
+            onConfirm = { itemName, isHeader ->
+
+                if (isHeader) {
+                    viewModel.addList(itemName, id)
+                } else {
+                    viewModel.addItem(id, itemName, false)
+                }
+                viewModel.onAddItemDialogDismissed()
+            },
+            showIsHeaderCheckbox = id == listId
+        )
+    }
+    itemToEdit?.let { (parentId, item) ->
+        EditItemDialog(
+            item = item,
+            onDismissRequest = { itemToEdit = null },
+            onConfirm = { newItemName ->
+                viewModel.editItemName(parentId, item.id, newItemName)
+                itemToEdit = null
+            }
+        )
+    }
+    listToEdit?.let { list ->
+        EditListDialog(
+            list = list,
+            onDismissRequest = { listToEdit = null },
+            onConfirm = { newListName ->
+                viewModel.editListName(list.id, newListName)
+                listToEdit = null
+            }
+        )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(currentList.name) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LisTreeTheme.colors.topAppBarContainer,
-                    titleContentColor = LisTreeTheme.colors.topAppBarTitle
-                ),
-                actions = {
-                    IconButton(onClick = { shareList(context, listId) }) {
-                        Icon(
-                            imageVector = Icons.Default.Send,
-                            contentDescription = stringResource(R.string.share_list)
-                        )
-                    }
-                    IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings_title)
-                        )
-                    }
+    LazyColumn(
+        state = lazyListState,
+        modifier = modifier
+            .fillMaxSize()
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+
+    ) {
+        items(
+            items = items,
+            key = { item -> item.id }
+        ) { item ->
+            when (item) {
+                is ListItem -> {
+                    val swipeDirection = itemsPendingDeletion[item.id]
+                    NormalItem(
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        reorderableState = reorderableState,
+                        item = item,
+                        swipeDirection = swipeDirection,
+                        density = density,
+                        itemHeights = itemHeights,
+                        viewModel = viewModel,
+                        listId = listId,
+                        onEditItem = { selectedItem ->
+                            println("onEditItem: $selectedItem")
+                            itemToEdit = listId to selectedItem
+                        },
+                        onStartPendingDelete = { direction ->
+                            itemsPendingDeletion = itemsPendingDeletion + (item.id to direction)
+                        },
+                        onUndoPendingDelete = {
+                            itemsPendingDeletion = itemsPendingDeletion - item.id
+                        },
+                    )
                 }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { listIdForNewItem = listId },
-                containerColor = LisTreeTheme.colors.topAppBarContainer
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_item))
-            }
-        },
-        modifier = modifier.fillMaxSize()
-    ) { innerPadding ->
 
-        listIdForNewItem?.let { id ->
-            AddItemDialog(
-                onDismissRequest = { listIdForNewItem = null },
-                onConfirm = { itemName, isHeader ->
-
-                    if (isHeader) {
-                        viewModel.addList(itemName, id)
-                    } else {
-                        viewModel.addItem(id, itemName, false)
-                    }
-                    listIdForNewItem = null
-                },
-                showIsHeaderCheckbox = id == listId
-            )
-        }
-        itemToEdit?.let { (parentId, item) ->
-            EditItemDialog(
-                item = item,
-                onDismissRequest = { itemToEdit = null },
-                onConfirm = { newItemName ->
-                    viewModel.editItemName(parentId, item.id, newItemName)
-                    itemToEdit = null
-                }
-            )
-        }
-        listToEdit?.let { list ->
-            EditListDialog(
-                list = list,
-                onDismissRequest = { listToEdit = null },
-                onConfirm = { newListName ->
-                    viewModel.editListName(list.id, newListName)
-                    listToEdit = null
-                }
-            )
-        }
-
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-
-        ) {
-            items(
-                items = items,
-                key = { item -> item.id }
-            ) { item ->
-                when (item) {
-                    is ListItem -> {
-                        val swipeDirection = itemsPendingDeletion[item.id]
-                        NormalItem(
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            reorderableState = reorderableState,
-                            item = item,
-                            swipeDirection = swipeDirection,
-                            density = density,
-                            itemHeights = itemHeights,
-                            viewModel = viewModel,
-                            listId = listId,
-                            onEditItem = { selectedItem ->
-                                println("onEditItem: $selectedItem")
-                                itemToEdit = listId to selectedItem
-                            },
-                            onStartPendingDelete = { direction ->
-                                itemsPendingDeletion = itemsPendingDeletion + (item.id to direction)
-                            },
-                            onUndoPendingDelete = {
-                                itemsPendingDeletion = itemsPendingDeletion - item.id
-                            },
-                        )
-                    }
-
-                    is TreeList -> {
-                        ExpandableItemList(
-                            list = item,
-                            viewModel = viewModel,
-                            reorderableState = reorderableState,
-                            onAddItem = { listIdForNewItem = it },
-//                            onListToEdit = { listToEdit = it }
-                            onEditItem = { itemToEdit = it },
-                            onListToEdit = {
-                                val listToEdit2 = findListById(allLists, it)
-                                println("listToEdit2: $listToEdit2")
-                                listToEdit = findListById(allLists, it)
-                            }
-                        )
-                    }
+                is TreeList -> {
+                    ExpandableItemList(
+                        list = item,
+                        viewModel = viewModel,
+                        reorderableState = reorderableState,
+                        onAddItem = { viewModel.onAddItemClicked(it) },
+                        onEditItem = { itemToEdit = it },
+                        onListToEdit = {
+                            val listToEdit2 = findListById(allLists, it)
+                            println("listToEdit2: $listToEdit2")
+                            listToEdit = findListById(allLists, it)
+                        }
+                    )
                 }
             }
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
+        }
+        item {
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }

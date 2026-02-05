@@ -17,8 +17,10 @@ import com.mitte.listree.ui.models.ListContent
 import com.mitte.listree.ui.models.ListItem
 import com.mitte.listree.ui.models.ListType
 import com.mitte.listree.ui.models.TreeList
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -40,6 +42,32 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
 
     private val _showDeleted = MutableStateFlow(preferencesManager.getShowDeleted())
     val showDeleted: StateFlow<Boolean> = _showDeleted.asStateFlow()
+
+    private val _shareListEvent = MutableSharedFlow<String>()
+    val shareListEvent = _shareListEvent.asSharedFlow()
+
+    private val _showAddItemDialog = MutableStateFlow<String?>(null)
+    val showAddItemDialog: StateFlow<String?> = _showAddItemDialog.asStateFlow()
+
+    private val _showAddListDialog = MutableStateFlow(false)
+    val showAddListDialog: StateFlow<Boolean> = _showAddListDialog.asStateFlow()
+
+    fun onAddListClicked() {
+        _showAddListDialog.value = true
+    }
+
+    fun onAddListDialogDismissed() {
+        _showAddListDialog.value = false
+    }
+
+    fun onAddItemClicked(listId: String) {
+        _showAddItemDialog.value = listId
+    }
+
+    fun onAddItemDialogDismissed() {
+        _showAddItemDialog.value = null
+    }
+
 
     init {
         loadLists()
@@ -356,7 +384,6 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                     when (child) {
                         is TreeList -> mapAndDeleteList(listOf(child), listId).first()
                         is ListItem -> child
-                        else -> child
                     }
                 })
             }
@@ -379,7 +406,6 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                     when (child) {
                         is TreeList -> mapAndUndeleteList(listOf(child), listId).first()
                         is ListItem -> child
-                        else -> child
                     }
                 })
             }
@@ -406,7 +432,6 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                     when (child) {
                         is TreeList -> mapAndEditListName(listOf(child), listId, newName).first()
                         is ListItem -> child
-                        else -> child
                     }
                 })
             }
@@ -651,6 +676,14 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             repository.permanentlyClearDeleted()
             loadLists()
+        }
+    }
+
+    fun onShareListClicked(listId: String?) {
+        listId ?: return // Do nothing if the listId is null
+        val listText = exportListToText(listId)
+        viewModelScope.launch {
+            _shareListEvent.emit(listText)
         }
     }
 }

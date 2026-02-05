@@ -5,6 +5,9 @@
     <!-- MainView -->
     <string name="your_lists">Dina listor</string>
     <string name="add_new_list">Lägg till ny lista</string>
+    <string name="add_new_list_or_group">Lägg till lista eller grupp</string>
+    <string name="list_or_group_name">Lista eller gruppnamn</string>
+    <string name="create_as_group">Skapa som grupp</string>
     <string name="create_new_list">Skapa ny lista</string>
     <string name="create_new_sub_list">Skapa ny underlista</string>
     <string name="edit_list_name">Redigera listnamn</string>

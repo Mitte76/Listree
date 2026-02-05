@@ -14,19 +14,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -41,9 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.mitte.listree.LisTreeViewModel
 import com.mitte.listree.R
+import com.mitte.listree.navigation.Routes
 import com.mitte.listree.ui.models.ListType
 import com.mitte.listree.ui.models.TreeList
-import com.mitte.listree.ui.theme.LisTreeTheme
 import com.mitte.listree.ui.views.dialogs.AddListDialog
 import com.mitte.listree.ui.views.dialogs.AddSubListDialog
 import com.mitte.listree.ui.views.dialogs.EditListDialog
@@ -54,12 +48,13 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainView(
+    modifier: Modifier = Modifier,
     viewModel: LisTreeViewModel, navController: NavController
 ) {
     val shoppingLists by viewModel.treeLists.collectAsState()
     val showDeleted by viewModel.showDeleted.collectAsState()
+    val showAddListDialog by viewModel.showAddListDialog.collectAsState()
 
-    var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var listToEditId by rememberSaveable { mutableStateOf<String?>(null) }
     var showAddSubListDialog by rememberSaveable { mutableStateOf(false) }
     var parentGroupId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -91,187 +86,165 @@ fun MainView(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LisTreeTheme.colors.topAppBarContainer,
-                    titleContentColor = LisTreeTheme.colors.topAppBarTitle
-                ),
-                actions = {
-                    IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings_title)
-                        )
-                    }
-                })
-        }, floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = LisTreeTheme.colors.topAppBarContainer
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_new_list))
-            }
-        }, modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
-        if (showAddDialog) {
-            AddListDialog(
-                onDismissRequest = { showAddDialog = false },
-                onConfirm = { listName, isGroup ->
-                    if (isGroup) {
-                        viewModel.addGroup(listName)
-                    } else {
-                        viewModel.addList(listName)
-                    }
-                    showAddDialog = false
-                })
-        }
-
-        listToEditId?.let { id ->
-            val listToEdit = viewModel.getListById(id)
-            if (listToEdit != null) {
-                EditListDialog(
-                    list = listToEdit,
-                    onDismissRequest = { listToEditId = null },
-                    onConfirm = { newName ->
-                        viewModel.editListName(id, newName)
-                        listToEditId = null
-                    })
-            }
-        }
-
-        if (showAddSubListDialog) {
-            parentGroupId?.let { id ->
-                val parentGroup = viewModel.getListById(id)
-                if (parentGroup != null) {
-                    AddSubListDialog(onDismissRequest = {
-                        showAddSubListDialog = false
-                        parentGroupId = null
-                    }, onConfirm = { subListName, isGroup ->
-                        if (isGroup) {
-                            viewModel.addGroup(subListName, id)
-                        } else {
-                            viewModel.addList(subListName, id)
-                        }
-                        showAddSubListDialog = false
-                        parentGroupId = null
-                    })
+    if (showAddListDialog) {
+        AddListDialog(
+            onDismissRequest = { viewModel.onAddListDialogDismissed() },
+            onConfirm = { listName, isGroup ->
+                if (isGroup) {
+                    viewModel.addGroup(listName)
+                } else {
+                    viewModel.addList(listName)
                 }
+                viewModel.onAddListDialogDismissed()
+            }
+        )
+    }
+
+    listToEditId?.let { id ->
+        val listToEdit = viewModel.getListById(id)
+        if (listToEdit != null) {
+            EditListDialog(
+                list = listToEdit,
+                onDismissRequest = { listToEditId = null },
+                onConfirm = { newName ->
+                    viewModel.editListName(id, newName)
+                    listToEditId = null
+                })
+        }
+    }
+
+    if (showAddSubListDialog) {
+        parentGroupId?.let { id ->
+            val parentGroup = viewModel.getListById(id)
+            if (parentGroup != null) {
+                AddSubListDialog(onDismissRequest = {
+                    showAddSubListDialog = false
+                    parentGroupId = null
+                }, onConfirm = { subListName, isGroup ->
+                    if (isGroup) {
+                        viewModel.addGroup(subListName, id)
+                    } else {
+                        viewModel.addList(subListName, id)
+                    }
+                    showAddSubListDialog = false
+                    parentGroupId = null
+                })
             }
         }
+    }
 
-        listToMove?.let { list ->
-            ModalBottomSheet(
-                onDismissRequest = { listToMove = null }, sheetState = bottomSheetState
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.move_list_to, list.name),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    LazyColumn {
-                        if (list.parentId != null) {
-                            item {
-                                Text(
-                                    text = stringResource(R.string.top_level),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            viewModel.moveListToNewParent(list.id, null)
-                                            closeMoveSheet()
-                                        }
-                                        .padding(vertical = 12.dp))
-                            }
-                        }
-
-                        val destinations =
-                            getFlatShoppingListWithDepth(shoppingLists).filter { (it, _) ->
-                                it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id
-                            }
-
-                        items(destinations) { (destination, depth) ->
+    listToMove?.let { list ->
+        ModalBottomSheet(
+            onDismissRequest = { listToMove = null }, sheetState = bottomSheetState
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    stringResource(R.string.move_list_to, list.name),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                LazyColumn {
+                    if (list.parentId != null) {
+                        item {
                             Text(
-                                text = destination.name,
+                                text = stringResource(R.string.top_level),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        viewModel.moveListToNewParent(list.id, destination.id)
+                                        viewModel.moveListToNewParent(list.id, null)
                                         closeMoveSheet()
                                     }
-                                    .padding(
-                                        start = (16 * depth).dp,
-                                        end = 16.dp,
-                                        top = 12.dp,
-                                        bottom = 12.dp
-                                    ))
+                                    .padding(vertical = 12.dp))
                         }
                     }
-                }
-            }
-        }
 
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) { ->
-            items(shoppingLists.filter { !it.deleted || showDeleted }, key = { it.id }) { list ->
-                ReorderableItem(reorderableState, key = list.id) { isDragging ->
-                    val elevation by animateDpAsState(
-                        if (isDragging) 8.dp else 2.dp, label = "elevation"
-                    )
+                    val destinations =
+                        getFlatShoppingListWithDepth(shoppingLists).filter { (it, _) ->
+                            it.type == ListType.GROUP_LIST && it.id != list.parentId && it.id != list.id
+                        }
 
-                    if (list.type == ListType.GROUP_LIST) {
-                        GroupSection(
-                            list = list,
-                            elevation = elevation,
-                            onListToEdit = { listToEditId = it.id },
-                            onAddSubList = {
-                                parentGroupId = it.id
-                                showAddSubListDialog = true
-                            },
-                            onMoveItem = { listToMove = it },
-                            viewModel = viewModel,
-                            navController = navController,
-
-                            iconButton = {
-                                IconButton(
-                                    modifier = Modifier
-                                        .draggableHandle()
-                                        .height(30.dp)
-                                        .width(30.dp),
-                                    onClick = {},
-                                ) {
-                                    Icon(
-                                        Icons.Rounded.DragHandle, contentDescription = "Reorder"
-                                    )
+                    items(destinations) { (destination, depth) ->
+                        Text(
+                            text = destination.name,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.moveListToNewParent(list.id, destination.id)
+                                    closeMoveSheet()
                                 }
-                            },
-                            showDeleted = showDeleted
-                        )
-                    } else {
-                        SingleSection(
-                            list = list,
-                            elevation = elevation,
-                            onListToEdit = { listToEditId = it.id },
-                            onMoveItem = { listToMove = it },
-                            onTap = { navController.navigate("shoppingItems/${list.id}") },
-                            viewModel = viewModel,
-                            modifier = Modifier.draggableHandle(),
-                            showDeleted = showDeleted
-                        )
+                                .padding(
+                                    start = (16 * depth).dp,
+                                    end = 16.dp,
+                                    top = 12.dp,
+                                    bottom = 12.dp
+                                ))
                     }
                 }
             }
         }
     }
+
+    LazyColumn(
+        state = lazyListState,
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) { ->
+        items(shoppingLists.filter { !it.deleted || showDeleted }, key = { it.id }) { list ->
+            ReorderableItem(reorderableState, key = list.id) { isDragging ->
+                val elevation by animateDpAsState(
+                    if (isDragging) 8.dp else 2.dp, label = "elevation"
+                )
+
+                if (list.type == ListType.GROUP_LIST) {
+                    GroupSection(
+                        list = list,
+                        elevation = elevation,
+                        onListToEdit = { listToEditId = it.id },
+                        onAddSubList = {
+                            parentGroupId = it.id
+                            showAddSubListDialog = true
+                        },
+                        onMoveItem = { listToMove = it },
+                        viewModel = viewModel,
+                        navController = navController,
+
+                        iconButton = {
+                            IconButton(
+                                modifier = Modifier
+                                    .draggableHandle()
+                                    .height(30.dp)
+                                    .width(30.dp),
+                                onClick = {},
+                            ) {
+                                Icon(
+                                    Icons.Rounded.DragHandle, contentDescription = "Reorder"
+                                )
+                            }
+                        },
+                        showDeleted = showDeleted
+                    )
+                } else {
+                    SingleSection(
+                        list = list,
+                        elevation = elevation,
+                        onListToEdit = { listToEditId = it.id },
+                        onMoveItem = { listToMove = it },
+                        onTap = {
+                            navController.navigate(
+                                Routes.SHOPPING_ITEMS.replace(
+                                    Routes.LIST_ID,
+                                    list.id
+                                )
+                            )
+                        },
+                        viewModel = viewModel,
+                        modifier = Modifier.draggableHandle(),
+                        showDeleted = showDeleted
+                    )
+                }
+            }
+        }
+    }
 }
-
-
-

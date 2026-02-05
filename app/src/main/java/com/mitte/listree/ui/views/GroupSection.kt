@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.mitte.listree.LisTreeViewModel
 import com.mitte.listree.R
+import com.mitte.listree.navigation.Routes
 import com.mitte.listree.ui.models.ListType
 import com.mitte.listree.ui.models.TreeList
 import com.mitte.listree.ui.theme.LisTreeTheme
@@ -260,12 +261,11 @@ fun GroupSection(
                                     elevation = elevation,
                                     onListToEdit = onListToEdit,
                                     onMoveItem = onMoveItem,
-                                    onTap = { navController.navigate("shoppingItems/${item.id}") },
+                                    onTap = { navController.navigate(Routes.SHOPPING_ITEMS.replace(Routes.LIST_ID, item.id)) },
                                     viewModel = viewModel,
                                     modifier = Modifier.draggableHandle(),
                                     showDeleted = showDeleted
                                 )
-
                             }
                         }
                     }
