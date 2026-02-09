@@ -16,6 +16,8 @@
     <string name="top_level">Top level</string>
     <string name="create">Create</string>
     <string name="settings_title">Settings</string>
+    <string name="todo_title">Todo</string>
+    <string name="calendar_title">Calendar</string>
 
     <!-- ListView -->
     <string name="not_found">Not Found</string>

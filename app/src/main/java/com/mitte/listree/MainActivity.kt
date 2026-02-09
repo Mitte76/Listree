@@ -12,14 +12,19 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -46,11 +52,13 @@ import com.mitte.listree.navigation.Routes
 import com.mitte.listree.ui.theme.DarkLisTreeColors
 import com.mitte.listree.ui.theme.LightLisTreeColors
 import com.mitte.listree.ui.theme.LisTreeTheme
-import com.mitte.listree.ui.views.ComponentThemeEditorScreen
-import com.mitte.listree.ui.views.ListView
-import com.mitte.listree.ui.views.MainView
-import com.mitte.listree.ui.views.SettingsScreen
-import com.mitte.listree.ui.views.ThemeEditorScreen
+import com.mitte.listree.ui.views.calendar.CalendarView
+import com.mitte.listree.ui.views.lists.ListView
+import com.mitte.listree.ui.views.lists.MainView
+import com.mitte.listree.ui.views.settings.ComponentThemeEditorScreen
+import com.mitte.listree.ui.views.settings.SettingsScreen
+import com.mitte.listree.ui.views.settings.ThemeEditorScreen
+import com.mitte.listree.ui.views.todo.TodoView
 import com.mitte.listree.update.DownloadCompletedReceiver
 import com.mitte.listree.update.UpdateManager
 import kotlinx.coroutines.CoroutineScope
@@ -150,41 +158,38 @@ class MainActivity : AppCompatActivity() {
                 }
                 Scaffold(
                     topBar = {
-                        println("currentRoute: $currentRoute")
-                        val listId = if (currentRoute == Routes.SHOPPING_ITEMS) {
-                            println("currentRoute: $currentRoute")
-                            navBackStackEntry?.arguments?.getString("listId")
-                        } else {
-                            null
+                        val title = when (currentRoute) {
+                            Routes.SHOPPING_ITEMS -> {
+                                val listId = navBackStackEntry?.arguments?.getString("listId")
+                                listId?.let { lisTreeViewModel.getListById(it)?.name }
+                                    ?: stringResource(R.string.app_name)
+                            }
+                            Routes.SETTINGS -> stringResource(R.string.settings_title)
+                            Routes.TODO -> stringResource(R.string.todo_title)
+                            Routes.CALENDAR -> stringResource(R.string.calendar_title)
+                            else -> stringResource(R.string.app_name)
                         }
 
-                        val tempTitle =
-                            if (listId != null) lisTreeViewModel.getListById(listId)?.name else null
-
-                        val title =
-                            if (currentRoute == Routes.SETTINGS) stringResource(R.string.settings_title) else tempTitle
-                                ?: stringResource(R.string.app_name)
-
-                        println("listId: $listId")
                         TopAppBar(
                             title = { Text(title) },
                             colors = TopAppBarDefaults.topAppBarColors(
                                 containerColor = LisTreeTheme.colors.topAppBarContainer,
                                 titleContentColor = LisTreeTheme.colors.topAppBarTitle
                             ),
-                            navigationIcon = {
-                                if (currentRoute != Routes.SHOPPING_LISTS) {
-                                    IconButton(onClick = { navController.popBackStack() }) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = stringResource(R.string.back_button_description)
-                                        )
-                                    }
-                                }
-                            },
+//                            navigationIcon = {
+//                                if (currentRoute != Routes.SHOPPING_LISTS) {
+//                                    IconButton(onClick = { navController.popBackStack() }) {
+//                                        Icon(
+//                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+//                                            contentDescription = stringResource(R.string.back_button_description)
+//                                        )
+//                                    }
+//                                }
+//                            },
                             actions = {
                                 if (currentRoute != Routes.SETTINGS) {
-                                    if (listId != null) {
+                                    if (currentRoute == Routes.SHOPPING_ITEMS) {
+                                        val listId = navBackStackEntry?.arguments?.getString("listId")
                                         IconButton(onClick = {
                                             lisTreeViewModel.onShareListClicked(
                                                 listId
@@ -238,7 +243,49 @@ class MainActivity : AppCompatActivity() {
                         }
                     },
                     bottomBar = {
-                        if (currentRoute != Routes.SETTINGS) {
+                        NavigationBar {
+                            NavigationBarItem(
+                                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(id = R.string.your_lists)) },
+                                label = { Text(stringResource(id = R.string.your_lists)) },
+                                selected = currentRoute == Routes.SHOPPING_LISTS,
+                                onClick = {
+                                    navController.navigate(Routes.SHOPPING_LISTS) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            )
+//                            NavigationBarItem(
+//                                icon = { Icon(Icons.AutoMirrored.Filled.PlaylistAddCheck, contentDescription = "Todo") },
+//                                label = { Text("Todo") },
+//                                selected = currentRoute == Routes.TODO,
+//                                onClick = {
+//                                    navController.navigate(Routes.TODO) {
+//                                        popUpTo(navController.graph.findStartDestination().id) {
+//                                            saveState = true
+//                                        }
+//                                        launchSingleTop = true
+//                                        restoreState = true
+//                                    }
+//                                }
+//                            )
+                            NavigationBarItem(
+                                icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Calendar") },
+                                label = { Text("Calendar") },
+                                selected = currentRoute == Routes.CALENDAR,
+                                onClick = {
+                                    navController.navigate(Routes.CALENDAR) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            )
                         }
                     }
                 ) { innerPadding ->
@@ -253,7 +300,12 @@ class MainActivity : AppCompatActivity() {
                                 navController = navController
                             )
                         }
-
+                        composable(Routes.TODO) {
+                            TodoView()
+                        }
+                        composable(Routes.CALENDAR) {
+                            CalendarView()
+                        }
                         composable(
                             route = Routes.SHOPPING_ITEMS,
                             arguments = listOf(navArgument("listId") { type = NavType.StringType })
@@ -263,7 +315,6 @@ class MainActivity : AppCompatActivity() {
                                 modifier = Modifier.padding(innerPadding),
                                 viewModel = lisTreeViewModel,
                                 listId = listId,
-                                navController = navController
                             )
                         }
                         composable(Routes.SETTINGS) {

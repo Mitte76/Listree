@@ -1,4 +1,4 @@
-package com.mitte.listree.ui.views
+package com.mitte.listree.ui.views.settings
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -53,6 +53,9 @@ import com.mitte.listree.ui.theme.DarkLisTreeColors
 import com.mitte.listree.ui.theme.LightLisTreeColors
 import com.mitte.listree.ui.theme.LisTreeColors
 import com.mitte.listree.ui.theme.LisTreeTheme
+import com.mitte.listree.ui.views.lists.GroupSection
+import com.mitte.listree.ui.views.lists.NormalItem
+import com.mitte.listree.ui.views.lists.SingleSection
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.reflect.full.memberProperties
 
@@ -128,7 +131,12 @@ fun ComponentThemeEditorScreen(
 
                         "groupSection" -> {
                             GroupSection(
-                                list = TreeList("1", "Group List", ListType.GROUP_LIST, isExpanded = false),
+                                list = TreeList(
+                                    "1",
+                                    "Group List",
+                                    ListType.GROUP_LIST,
+                                    isExpanded = false
+                                ),
                                 elevation = 2.dp,
                                 onListToEdit = {},
                                 onAddSubList = {},

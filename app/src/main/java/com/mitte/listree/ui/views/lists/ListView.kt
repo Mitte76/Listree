@@ -1,4 +1,4 @@
-package com.mitte.listree.ui.views
+package com.mitte.listree.ui.views.lists
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -68,7 +68,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -78,7 +77,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.mitte.listree.LisTreeViewModel
 import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListItem
@@ -101,11 +99,9 @@ fun ListView(
     modifier: Modifier = Modifier,
     viewModel: LisTreeViewModel,
     listId: String,
-    navController: NavController
 ) {
     val allLists by viewModel.treeLists.collectAsState()
     val showDeleted by viewModel.showDeleted.collectAsState()
-    val context = LocalContext.current
     val listIdForNewItem by viewModel.showAddItemDialog.collectAsState()
 
     fun findListById(lists: List<TreeList>, id: String): TreeList? {

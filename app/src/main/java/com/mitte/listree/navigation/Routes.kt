@@ -7,4 +7,6 @@ object Routes {
     const val SETTINGS = "settings"
     const val THEME_EDITOR = "themeEditor"
     const val COMPONENT_THEME_EDITOR = "componentThemeEditor/{componentName}"
+    const val TODO = "todo"
+    const val CALENDAR = "calendar"
 }

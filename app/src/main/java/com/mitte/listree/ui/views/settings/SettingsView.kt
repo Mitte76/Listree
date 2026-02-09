@@ -1,4 +1,4 @@
-package com.mitte.listree.ui.views
+package com.mitte.listree.ui.views.settings
 
 import android.net.Uri
 import android.os.Build
@@ -56,7 +56,9 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    navController: NavController, mainActivity: MainActivity, viewModel: LisTreeViewModel
+    navController: NavController,
+    mainActivity: MainActivity,
+    viewModel: LisTreeViewModel
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showImportConfirmDialog by remember { mutableStateOf<Uri?>(null) }

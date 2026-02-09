@@ -1,4 +1,4 @@
-package com.mitte.listree.ui.views
+package com.mitte.listree.ui.views.lists
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState

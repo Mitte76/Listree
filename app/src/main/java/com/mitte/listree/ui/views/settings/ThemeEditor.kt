@@ -1,4 +1,4 @@
-package com.mitte.listree.ui.views
+package com.mitte.listree.ui.views.settings
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -43,6 +43,9 @@ import com.mitte.listree.ui.models.TreeList
 import com.mitte.listree.ui.theme.DarkLisTreeColors
 import com.mitte.listree.ui.theme.LightLisTreeColors
 import com.mitte.listree.ui.theme.LisTreeTheme
+import com.mitte.listree.ui.views.lists.GroupSection
+import com.mitte.listree.ui.views.lists.NormalItem
+import com.mitte.listree.ui.views.lists.SingleSection
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 
