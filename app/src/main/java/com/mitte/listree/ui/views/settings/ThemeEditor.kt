@@ -35,7 +35,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.viewmodels.LisTreeViewModel
 import com.mitte.listree.data.ThemePersistence
 import com.mitte.listree.ui.models.ListItem
 import com.mitte.listree.ui.models.ListType

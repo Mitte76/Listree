@@ -45,7 +45,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
 import androidx.navigation.NavController
-import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.viewmodels.LisTreeViewModel
 import com.mitte.listree.MainActivity
 import com.mitte.listree.R
 import com.mitte.listree.ui.theme.LisTreeTheme

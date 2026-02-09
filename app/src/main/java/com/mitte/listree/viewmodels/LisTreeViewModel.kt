@@ -1,4 +1,4 @@
-package com.mitte.listree
+package com.mitte.listree.viewmodels
 
 import android.app.Application
 import android.content.ContentValues
@@ -31,6 +31,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlin.collections.plus
 
 class LisTreeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -143,7 +144,10 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
                 return null
             }
         } else { // For modern Android versions with MediaStore
-            val timeStamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
+            val timeStamp = SimpleDateFormat(
+                "yyyy-MM-dd_HH-mm-ss",
+                Locale.getDefault()
+            ).format(Date())
             val fileName = "$timeStamp.json"
 
             val contentValues = ContentValues().apply {
@@ -320,7 +324,8 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             name = name.trim(),
             type = ListType.ITEM_LIST,
             parentId = parentId,
-            order = if (parentId == null) _treeLists.value.size else getListById(parentId)?.children?.size ?: 0
+            order = if (parentId == null) _treeLists.value.size else getListById(parentId)?.children?.size
+                ?: 0
         )
         _treeLists.update { currentLists ->
             if (parentId == null) {
@@ -338,7 +343,8 @@ class LisTreeViewModel(application: Application) : AndroidViewModel(application)
             name = name.trim(),
             type = ListType.GROUP_LIST,
             parentId = parentId,
-            order = if (parentId == null) _treeLists.value.size else getListById(parentId)?.children?.size ?: 0
+            order = if (parentId == null) _treeLists.value.size else getListById(parentId)?.children?.size
+                ?: 0
         )
         _treeLists.update { currentLists ->
             if (parentId == null) {

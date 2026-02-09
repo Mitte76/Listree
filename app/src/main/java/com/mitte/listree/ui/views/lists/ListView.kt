@@ -77,7 +77,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.viewmodels.LisTreeViewModel
 import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListItem
 import com.mitte.listree.ui.models.TreeList

@@ -11,9 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -61,6 +59,7 @@ import com.mitte.listree.ui.views.settings.ThemeEditorScreen
 import com.mitte.listree.ui.views.todo.TodoView
 import com.mitte.listree.update.DownloadCompletedReceiver
 import com.mitte.listree.update.UpdateManager
+import com.mitte.listree.viewmodels.LisTreeViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -164,6 +163,7 @@ class MainActivity : AppCompatActivity() {
                                 listId?.let { lisTreeViewModel.getListById(it)?.name }
                                     ?: stringResource(R.string.app_name)
                             }
+
                             Routes.SETTINGS -> stringResource(R.string.settings_title)
                             Routes.TODO -> stringResource(R.string.todo_title)
                             Routes.CALENDAR -> stringResource(R.string.calendar_title)
@@ -189,7 +189,8 @@ class MainActivity : AppCompatActivity() {
                             actions = {
                                 if (currentRoute != Routes.SETTINGS) {
                                     if (currentRoute == Routes.SHOPPING_ITEMS) {
-                                        val listId = navBackStackEntry?.arguments?.getString("listId")
+                                        val listId =
+                                            navBackStackEntry?.arguments?.getString("listId")
                                         IconButton(onClick = {
                                             lisTreeViewModel.onShareListClicked(
                                                 listId
@@ -245,7 +246,12 @@ class MainActivity : AppCompatActivity() {
                     bottomBar = {
                         NavigationBar {
                             NavigationBarItem(
-                                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(id = R.string.your_lists)) },
+                                icon = {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.List,
+                                        contentDescription = stringResource(id = R.string.your_lists)
+                                    )
+                                },
                                 label = { Text(stringResource(id = R.string.your_lists)) },
                                 selected = currentRoute == Routes.SHOPPING_LISTS,
                                 onClick = {
@@ -273,7 +279,12 @@ class MainActivity : AppCompatActivity() {
 //                                }
 //                            )
                             NavigationBarItem(
-                                icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Calendar") },
+                                icon = {
+                                    Icon(
+                                        Icons.Default.CalendarMonth,
+                                        contentDescription = "Calendar"
+                                    )
+                                },
                                 label = { Text("Calendar") },
                                 selected = currentRoute == Routes.CALENDAR,
                                 onClick = {
@@ -304,7 +315,7 @@ class MainActivity : AppCompatActivity() {
                             TodoView()
                         }
                         composable(Routes.CALENDAR) {
-                            CalendarView()
+                            CalendarView(modifier = Modifier.padding(innerPadding))
                         }
                         composable(
                             route = Routes.SHOPPING_ITEMS,

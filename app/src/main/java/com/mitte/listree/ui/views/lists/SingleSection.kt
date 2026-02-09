@@ -42,7 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.viewmodels.LisTreeViewModel
 import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListContent
 import com.mitte.listree.ui.models.ListItem

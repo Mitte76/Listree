@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.mitte.listree.LisTreeViewModel
+import com.mitte.listree.viewmodels.LisTreeViewModel
 import com.mitte.listree.R
 import com.mitte.listree.navigation.Routes
 import com.mitte.listree.ui.models.ListType
