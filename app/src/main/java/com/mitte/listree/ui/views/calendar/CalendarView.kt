@@ -1,63 +1,77 @@
 package com.mitte.listree.ui.views.calendar
 
-import android.app.Activity
-import android.util.Log
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import android.Manifest
+import android.content.ContentResolver
+import android.provider.CalendarContract
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
-import com.mitte.listree.R
-import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.dp
+import com.google.accompanist.permissions.*
 
+data class CalendarEvent(val title: String, val startMillis: Long, val endMillis: Long)
+
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CalendarView(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val activity = context as? Activity ?: return
-    val auth = FirebaseAuth.getInstance()
-    val serverClientId = remember { context.getString(R.string.default_web_client_id) }
-    val credentialManager = remember { CredentialManager.create(context) }
-    val coroutineScope = rememberCoroutineScope()
+    var events by remember { mutableStateOf(listOf<CalendarEvent>()) }
 
-    Box(modifier = modifier.background(Color.White)) {
-        Button(onClick = {
-            coroutineScope.launch {
-                try {
-                    val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(serverClientId).build()
-                    val fallbackRequest = GetCredentialRequest.Builder()
-                        .addCredentialOption(signInWithGoogleOption)
-                        .build()
+    val permissionState = rememberPermissionState(Manifest.permission.READ_CALENDAR)
 
-                    val result = credentialManager.getCredential(activity, fallbackRequest)
-                    val credential = result.credential
-                    if (credential is GoogleIdTokenCredential) {
-                        val firebaseCredential = GoogleAuthProvider.getCredential(credential.idToken, null)
-                        auth.signInWithCredential(firebaseCredential)
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    Log.d("CalendarView", "Firebase interactive sign-in SUCCESS")
-                                } else {
-                                    Log.e("CalendarView", "Firebase interactive sign-in FAILED", task.exception)
-                                }
-                            }
-                    }
-                } catch (e: Exception) {
-                    Log.e("CalendarView", "Sign-in with Google failed", e)
+    Column(modifier = modifier.padding(16.dp)) {
+        if (permissionState.status.isGranted) {
+            // Permission granted → fetch events
+            LaunchedEffect(Unit) {
+                events = fetchCalendarEvents(context.contentResolver)
+            }
+
+            Text("Upcoming events:")
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                items(events) { event ->
+                    Text("${event.title} | ${event.startMillis} - ${event.endMillis}")
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
-        }) {
-            Text("Sign in with Google")
+        } else {
+            // Permission not granted → show button
+            Button(onClick = { permissionState.launchPermissionRequest() }) {
+                Text("Grant Calendar Permission")
+            }
         }
     }
+}
+
+fun fetchCalendarEvents(contentResolver: ContentResolver): List<CalendarEvent> {
+    val events = mutableListOf<CalendarEvent>()
+    val uri = CalendarContract.Events.CONTENT_URI
+    val projection = arrayOf(
+        CalendarContract.Events.TITLE,
+        CalendarContract.Events.DTSTART,
+        CalendarContract.Events.DTEND
+    )
+
+    val cursor = contentResolver.query(
+        uri, projection, null, null,
+        CalendarContract.Events.DTSTART + " ASC"
+    )
+
+    cursor?.use {
+        val titleIndex = it.getColumnIndex(CalendarContract.Events.TITLE)
+        val startIndex = it.getColumnIndex(CalendarContract.Events.DTSTART)
+        val endIndex = it.getColumnIndex(CalendarContract.Events.DTEND)
+
+        while (it.moveToNext()) {
+            val title = it.getString(titleIndex) ?: "No Title"
+            val start = it.getLong(startIndex)
+            val end = it.getLong(endIndex)
+            events.add(CalendarEvent(title, start, end))
+        }
+    }
+    return events
 }

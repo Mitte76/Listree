@@ -61,6 +61,10 @@ configure<ApplicationExtension> {
         compose = true
     }
 
+    packaging {
+        resources.excludes.add("META-INF/DEPENDENCIES")
+    }
+
     lint {
         textReport = true
         textOutput = file("lint-report.txt")
@@ -74,41 +78,49 @@ kotlin {
 }
 
 dependencies {
+    // Core Android
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // Compose UI
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+
+    // Misc
     implementation(libs.gson)
     implementation(libs.reorderable)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.google.api.client.android) // usually resolves to 1.34.1
+
+    implementation(libs.accompanist.permissions)
+
+
+    // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    implementation(libs.kotlin.reflect)
-    implementation(libs.androidx.material3)
+    ksp(libs.androidx.room.compiler)
 
-    // ✅ Firebase Auth using BOM
+    // Firebase Auth
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.play.services.auth)
+    implementation(libs.google.firebase.auth)
 
-    // Credentials & Google ID
+    // Google Identity & Credentials
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
 
-    // Compose UI
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-
-    // Room compiler
-    ksp(libs.androidx.room.compiler)
+    // Google Sign-In & Calendar API
+    implementation(libs.play.services.auth)
+    implementation(libs.google.api.client.android)
+    implementation(libs.google.api.services.calendar)
 
     // Testing
     testImplementation(libs.junit)
