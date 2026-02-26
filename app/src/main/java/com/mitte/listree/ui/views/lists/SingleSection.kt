@@ -42,12 +42,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.mitte.listree.viewmodels.LisTreeViewModel
 import com.mitte.listree.R
 import com.mitte.listree.ui.models.ListContent
 import com.mitte.listree.ui.models.ListItem
 import com.mitte.listree.ui.models.TreeList
 import com.mitte.listree.ui.theme.LisTreeTheme
+import com.mitte.listree.viewmodels.LisTreeViewModel
 import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -102,7 +102,8 @@ fun SingleSection(
                     onTap = { onTap() }
                 )
             },
-    ) {
+
+        ) {
         Box(modifier = Modifier.alpha(if (list.deleted) 0.6f else 1f)) {
             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                 Row(
@@ -135,7 +136,10 @@ fun SingleSection(
                         IconButton(onClick = { viewModel.undeleteList(list.id) }) {
                             Icon(
                                 Icons.Default.Restore,
-                                contentDescription = stringResource(R.string.restore_list, list.name)
+                                contentDescription = stringResource(
+                                    R.string.restore_list,
+                                    list.name
+                                )
                             )
                         }
                     } else {

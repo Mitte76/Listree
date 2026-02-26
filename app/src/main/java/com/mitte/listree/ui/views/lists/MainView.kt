@@ -188,7 +188,7 @@ fun MainView(
         state = lazyListState,
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) { ->
         items(shoppingLists.filter { !it.deleted || showDeleted }, key = { it.id }) { list ->

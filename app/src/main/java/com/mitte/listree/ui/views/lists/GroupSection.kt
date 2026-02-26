@@ -79,7 +79,7 @@ fun GroupSection(
     Column(modifier = Modifier.padding(start = 0.dp)) {
 
         Surface(
-            shape = CardDefaults.shape,
+//            shape = CardDefaults.shape,
             color = if (list.deleted) LisTreeTheme.colors.groupCardDeletedContainer else LisTreeTheme.colors.groupCardContainer,
             contentColor = if (list.deleted) LisTreeTheme.colors.groupCardDeletedContent else LisTreeTheme.colors.groupCardContent,
             shadowElevation = elevation,

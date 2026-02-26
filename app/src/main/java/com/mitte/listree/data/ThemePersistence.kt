@@ -20,6 +20,7 @@ class ThemePersistence(context: Context) {
     }
 
     fun loadTheme(themeName: String, defaultColors: LisTreeColors): LisTreeColors {
+//        sharedPreferences.edit { remove("theme_$themeName") }
         val json = sharedPreferences.getString("theme_$themeName", null)
 
         val mergedColors = if (json != null) {
